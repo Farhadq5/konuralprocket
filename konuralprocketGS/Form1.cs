@@ -6,16 +6,14 @@ using GMap.NET.WindowsForms.Markers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
-
-
-
 
 namespace konuralprocketGS
 {
@@ -35,6 +33,11 @@ namespace konuralprocketGS
             InitializeComponent();
             InitializeSerialPort();
             InitializeGMap();
+            InitializeGMap2();
+
+            backgroundWorker1 = new BackgroundWorker();
+            backgroundWorker1.DoWork += backgroundWorker_DoWork;
+            backgroundWorker1.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
 
             // Set the interval in milliseconds (adjust as needed)
             serialtimer.Tick += DataTimer_Tick;
@@ -67,13 +70,15 @@ namespace konuralprocketGS
         #region opengl
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
+            string altitudeText =  label47.Text;
+
             float step = 1.0f;
             float topla = step;
             float radius = 4.0f;
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            Matrix4 perspective = Matrix4.CreatePerspectiveFieldOfView(1.04f, glControl1.Width / (float)glControl1.Height, 1, 10000);
+            Matrix4 perspective = Matrix4.CreatePerspectiveFieldOfView(1.2f, glControl1.Width / (float)glControl1.Height, 1, 10000);
             Matrix4 lookat = Matrix4.LookAt(25 * zoomFactor, 0, 0, 0, 0, 0, 0, 1, 0);
 
             GL.MatrixMode(MatrixMode.Projection);
@@ -92,12 +97,21 @@ namespace konuralprocketGS
             GL.Rotate(z, 0.0, 1.0, 0.0);
             GL.Rotate(y, 0.0, 0.0, 1.0);
 
+
+
             DrawRocketComponents(step, topla, radius);
 
             DrawCoordinateAxes();
 
             glControl1.SwapBuffers();
+
+            DrawAltitudeText(e.Graphics, altitudeText);
+
+            GL.End();
+
         }
+
+       
 
         private void DrawRocketComponents(float step, float topla, float radius)
         {
@@ -115,19 +129,25 @@ namespace konuralprocketGS
         {
             GL.Begin(BeginMode.Lines);
 
-            GL.Color3(Color.FromArgb(250, 0, 0));
-            GL.Vertex3(-1000, 0, 0);
-            GL.Vertex3(1000, 0, 0);
+            // X-axis (red)
+            GL.Color3(Color.Red);
+            GL.Vertex3(-100, 0, 0);
+            GL.Vertex3(100, 0, 0);
 
-            GL.Color3(Color.FromArgb(25, 150, 100));
-            GL.Vertex3(0, 0, -1000);
-            GL.Vertex3(0, 0, 1000);
+            // Y-axis (green)
+            GL.Color3(Color.Green);
+            GL.Vertex3(0, -100, 0);
+            GL.Vertex3(0, 100, 0);
 
-            GL.Color3(Color.FromArgb(0, 0, 0));
-            GL.Vertex3(0, 1000, 0);
-            GL.Vertex3(0, -1000, 0);
+            // Z-axis (blue)
+            GL.Color3(Color.Blue);
+            GL.Vertex3(0, 0, -100);
+            GL.Vertex3(0, 0, 100);
+
+            
 
             GL.End();
+
         }
 
         private void glControl1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -294,7 +314,46 @@ namespace konuralprocketGS
 
         }
 
+        private void DrawAltitudeText(Graphics g, string altitudeText)
+        {
+            // Define font and brush for drawing the text
+            Font font = new Font("Arial", 8);
+            Brush brush = Brushes.White;
 
+            // Define the line coordinates for the altitude indicator
+            int altitudeLineX1 = 10; // X-coordinate of the line start
+            int altitudeLineX2 = 10; // X-coordinate of the line end
+            int altitudeLineY1 = 15; // Y-coordinate of the line start
+            int altitudeLineY2 = glControl1.Height - 15; // Y-coordinate of the line end
+
+            // Draw the altitude line
+            Pen altitudePen = new Pen(Color.Yellow, 2);
+            g.DrawLine(altitudePen, altitudeLineX1, altitudeLineY1, altitudeLineX2, altitudeLineY2);
+
+            // Show the altitude value in the middle of the altitude line
+            SizeF altitudeTextSize = g.MeasureString(altitudeText, font);
+            int altitudeTextXPos = altitudeLineX2 + 10; // X-coordinate for the altitude text
+            int altitudeTextYPos = (altitudeLineY1 + altitudeLineY2) / 2 - (int)altitudeTextSize.Height / 2; // Y-coordinate for the altitude text
+            g.DrawString(altitudeText, font, brush, altitudeTextXPos, altitudeTextYPos);
+
+            //// Define the line coordinates for the speed indicator
+            //int speedLineX1 = glControl1.Width - 30; // X-coordinate of the line start
+            //int speedLineX2 = glControl1.Width - 30; // X-coordinate of the line end
+            //int speedLineY1 = 50; // Y-coordinate of the line start
+            //int speedLineY2 = glControl1.Height - 50; // Y-coordinate of the line end
+
+            //// Draw the speed line
+            //Pen speedPen = new Pen(Color.Yellow, 2);
+            //g.DrawLine(speedPen, speedLineX1, speedLineY1, speedLineX2, speedLineY2);
+
+            //// Show the speed value in the middle of the speed line
+            //string speedText = "Speed: 0"; // Replace 0 with the actual speed value
+            //SizeF speedTextSize = g.MeasureString(speedText, font);
+            //int speedTextXPos = speedLineX2 + 10; // X-coordinate for the speed text
+            //int speedTextYPos = (speedLineY1 + speedLineY2) / 2 - (int)speedTextSize.Height / 2; // Y-coordinate for the speed text
+            //g.DrawString(speedText, font, brush, speedTextXPos, speedTextYPos);
+            GL.End();
+        }
 
         #endregion
 
@@ -338,6 +397,47 @@ namespace konuralprocketGS
         }
 
         #endregion
+
+        #region mapcontrol 2
+        private void InitializeGMap2()
+        {
+            // Set the map provider (you can choose other providers)
+            mapcontrol2.MapProvider = GMapProviders.GoogleMap;
+
+            // Set the initial position and zoom level
+            mapcontrol2.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
+            mapcontrol2.MinZoom = 1;
+            mapcontrol2.MaxZoom = 20;
+            mapcontrol2.Zoom = 12;
+
+            // Add GMapControl to the form
+            mapcontrol2.Overlays.Add(markerOverlay);
+        }
+
+        private void ShowCurrantPosation2(double lat, double lng)
+        {
+            // well set currant positions
+            currentPosationMarker.Position = new PointLatLng(lat, lng);
+
+            markerOverlay.Markers.Clear();
+            markerOverlay.Markers.Add(currentPosationMarker);
+
+
+            mapcontrol2.Position=new PointLatLng(lat, lng);
+            mapcontrol2.DragButton=MouseButtons.Right;
+        }
+        private void UpdateMapPosition2(double latitude, double longitude)
+        {
+            // Clear existing markers and add the new marker
+            markerOverlay.Markers.Clear();
+            GMarkerGoogle positionMarker = new GMarkerGoogle(new PointLatLng(latitude, longitude), GMarkerGoogleType.arrow);
+            markerOverlay.Markers.Add(positionMarker);
+            // Set the map center to the new position
+            mapcontrol.Position = new PointLatLng(latitude, longitude);
+            mapcontrol.Zoom= 15;
+        }
+
+        #endregion
         private void InitializeSerialPort()
         {
             serialPort = new SerialPort();
@@ -361,31 +461,50 @@ namespace konuralprocketGS
         private async Task<string> ReadLineAsync(Stream stream)
         {
             byte[] buffer = new byte[1024];
-            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+            int bytesRead = 0;
+            char lastchar = '\0';
 
-            return Encoding.ASCII.GetString(buffer, 0, bytesRead);
+            while (true) 
+            {
+                bytesRead+= await stream.ReadAsync(buffer, bytesRead, 1);
+
+                if (bytesRead>0)
+                {
+                    char currentCahr = (char)buffer[bytesRead - 1];
+
+                    if (currentCahr == '\n' && lastchar == '\r')
+                    {
+                        //return a newline character return the compleat line
+                        return Encoding.ASCII.GetString(buffer,0,bytesRead - 2);
+                    }
+                    lastchar = currentCahr;
+                }
+            }
         }
 
        
         private void parsedata(string data)
         {
-            // Split the data using the '*' delimiter
-            string[] values = data.Split('*');
+            Console.WriteLine($"recived data {data}");
+            richTextBox1.AppendText($"recived data {data}\n");
+            // Split the data using the ',' delimiter
+            string[] values = data.Split(',');
 
-            if (values.Length >= 6) // Check if there are at least 5 elements in the array
+            if (values.Length >= 8) // Check if there are at least 5 elements in the array
             {
                 updategyro(values[0], values[1], values[2]);
                 updatebmp(values[3], values[4], values[5]);
-                //gps(values[0], values[1]);
+                gps(values[6], values[7]);
             }
 
         }
 
+        // gyro controll
         private void updategyro(string X, string Y, string Z)
         {
-            textBox1.Text = X;
-            textBox2.Text = Y;
-            textBox4.Text = Z;
+            label45.Text = X;
+            label49.Text = Y;
+            label50.Text = Z;
             label15.Text = X;
             label16.Text = Y;
             label17.Text = Z;
@@ -412,14 +531,15 @@ namespace konuralprocketGS
             dataGridView1.Rows[rowIndex].Cells["Column19"].Value = Y;
             dataGridView1.Rows[rowIndex].Cells["Column20"].Value = Z;
         }
-
-
+        
+        // tempreture and pressure controll
         private void updatebmp(string temp, string pressure, string altitude)
         {
-            textBoxTemperature.Text = temp;
-            txtpresher.Text = pressure;
-            textBox3.Text= altitude;
-            //textBox3.Text = altitude;
+            label43.Text = temp;
+            label41.Text = pressure;
+            label47.Text= altitude;
+
+
             int rowIndex = dataGridView1.Rows.Add();
             dataGridView1.Rows[rowIndex].Cells["Column13"].Value = temp;
             dataGridView1.Rows[rowIndex].Cells["Column6"].Value = pressure;
@@ -428,6 +548,7 @@ namespace konuralprocketGS
 
         }
 
+        // gps controll
         private void gps(string lat, string lng)
         {
             double lat1, lng1;
@@ -440,14 +561,20 @@ namespace konuralprocketGS
                 {
                     txtlat.Text = lat1.ToString();
                     txtlong.Text = lng1.ToString();
+                   
                     UpdateMapPosition(lat1, lng1);
+
+                    // gps controll 2 for the second map update it when its necessary
+                    label39.Text= lat1.ToString();
+                    label7.Text= lng1.ToString();
+
+                    UpdateMapPosition2(lat1, lng1);
 
                     int rowIndex = dataGridView1.Rows.Add();
                     dataGridView1.Rows[rowIndex].Cells["Column15"].Value = lat1;
                     dataGridView1.Rows[rowIndex].Cells["Column16"].Value = lng1;
                 }
             }
-
         }
 
         private void PopulateCOMPorts()
@@ -479,31 +606,105 @@ namespace konuralprocketGS
             comboBox7.SelectedIndex = 0;
         }
 
-        private void sendCommand(char command)
+        //private void sendCommand(char command)
+        //{
+        //    try
+        //    {
+
+        //        serialPort.Write($"{command}");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Error sending command to Arduino: {ex.Message}");
+        //    }
+        //}
+
+        //this button closes the serialport
+        private void mapcontrol_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox11_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void panel4_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        //serialport connect and disconnect button
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (comboBox6.SelectedIndex >= 0)
+            {
+                if (!serialPort.IsOpen)
+                {
+                    // Set the selected COM port
+                    serialPort.PortName = comboBox6.SelectedItem.ToString();
+
+                    // Start background worker to open the serial port
+                    backgroundWorker1.RunWorkerAsync();
+                }
+                else
+                {
+                    DisconnectSerialPort();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a COM port.");
+            }
+        }
+
+        private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
-
-                serialPort.Write($"{command}");
+                serialPort.Open();
+                e.Result = true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error sending command to Arduino: {ex.Message}");
+                e.Result = ex.Message;
             }
         }
 
-        //this button closes the serialport
-        private void button4_Click_1(object sender, EventArgs e)
+        private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            sendCommand('4');
-            serialPort.Close();
-            textBox1.Clear();
-            button3.Enabled=true;
+            if (e.Result is bool && (bool)e.Result)
+            {
+                MessageBox.Show($"Connected to {serialPort.PortName}");
+                button3.BackColor = Color.Red;
+                button3.Text = "Bağlantıyı kes";
+            }
+            else
+            {
+                MessageBox.Show($"Error opening serial port: {e.Result}");
+            }
         }
 
-        private void button11_Click(object sender, EventArgs e)
+        private void DisconnectSerialPort()
         {
+            serialPort.Close();
+            MessageBox.Show($"Disconnected from {serialPort.PortName}");
+            button3.BackColor = Color.Green; ; // Change button back color to default
+            button3.Text = "Bağlan"; // Change button text
         }
+
+
+        private void button13_Click(object sender, EventArgs e)
+        {
+            temizle1();
+        }
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
         // this button get the values from datagridview to exel file
         private void button6_Click_1(object sender, EventArgs e)
         {
@@ -550,15 +751,11 @@ namespace konuralprocketGS
 
         }
 
-        private void button10_Click(object sender, EventArgs e)
-        {
-            this.Update();
-        }
 
         private void glControl1_Load(object sender, EventArgs e)
         {
-            GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            GL.Enable(EnableCap.DepthTest);
+            //GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            //GL.Enable(EnableCap.DepthTest);
         }
         
 
@@ -604,52 +801,22 @@ namespace konuralprocketGS
             }
 
         }
-
-        //manual map controll lat lng finder
-        private void button8_Click_1(object sender, EventArgs e)
+       private void temizle1()
         {
-            if (!string.IsNullOrEmpty(txtlat.Text) && !string.IsNullOrEmpty(txtlong.Text))
-            {
-                ShowCurrantPosation(Convert.ToDouble(txtlat.Text), Convert.ToDouble(txtlong.Text));
-            }
-            else
-            {
-                MessageBox.Show("Please enter valid latitude and longitude.");
-            }
+            label41.Text = "0";
+            label42.Text = "0";
+            label43.Text = "0";
+            label44.Text = "0";
+            label45.Text = "0";
+            label46.Text = "0";
+            label47.Text = "0";
+            label48.Text = "0";
+            label49.Text = "0";
+            label50.Text = "0";
+            label7.Text = "0";
+            label39.Text = "0";
+            label40.Text = "0";
         }
-
-
-        //serialport connect button
-        private void button3_Click_1(object sender, EventArgs e)
-        {
-            // Check if a COM port is selected
-            if (comboBox6.SelectedIndex >= 0)
-            {
-                // Set the selected COM port
-                serialPort.PortName = comboBox6.SelectedItem.ToString();
-
-                try
-                {
-                    // Open the serial port
-                    serialPort.Open();
-
-                    // Disable the Connect button after successful connection
-                    button3.Enabled = false;
-
-                    MessageBox.Show($"Connected to {serialPort.PortName}");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error opening serial port: {ex.Message}");
-                }
-            }
-            else
-            {
-                MessageBox.Show("Please select a COM port.");
-            }
-
-        } 
-
         private void timer1_Tick(object sender, EventArgs e)
         {
             try
