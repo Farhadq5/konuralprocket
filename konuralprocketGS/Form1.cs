@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.ExtendedProperties;
 using GMap.NET;
 using GMap.NET.MapProviders;
 using GMap.NET.WindowsForms;
@@ -51,7 +52,8 @@ namespace konuralprocketGS
         {
             PopulateCOMPorts();
             PopulateBaudRates();
-            timer1.Interval=100;
+            timer1.Interval=1;
+            
         }
         private void DataTimer_Tick(object sender, EventArgs e)
         {
@@ -70,7 +72,11 @@ namespace konuralprocketGS
         #region opengl
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-            string altitudeText =  label47.Text;
+            string altitudeText =  label47.Text;           
+            int altitudeValue = int.Parse(altitudeText);
+            string speed = label44.Text;
+            int speedvalue = int.Parse(speed);
+            
 
             float step = 1.0f;
             float topla = step;
@@ -105,7 +111,8 @@ namespace konuralprocketGS
 
             glControl1.SwapBuffers();
 
-            DrawAltitudeText(e.Graphics, altitudeText);
+            DrawSpeedIndicator(e.Graphics,speed,speedvalue);
+            DrawAltitudeIndicator(e.Graphics,altitudeText,altitudeValue);
 
             GL.End();
 
@@ -314,46 +321,119 @@ namespace konuralprocketGS
 
         }
 
-        private void DrawAltitudeText(Graphics g, string altitudeText)
+        private void DrawAltitudeIndicator(Graphics g, string altitudeText, int altitudeValue)
+        {
+            // Define font and brushes for drawing the text
+            Font largeFont = new Font("Arial", 12, FontStyle.Bold);
+            Font smallFont = new Font("Arial", 9);
+            Brush largeBrush = Brushes.White;
+            Brush smallBrush = Brushes.Gray;
+
+            // Define the coordinates for the altitude indicator
+            int altitudeLineX1 = 20; // X-coordinate of the line start
+            int altitudeLineY1 = 20; // Y-coordinate of the line start
+            int altitudeLineY2 = glControl1.Height - 20; // Y-coordinate of the line end
+
+            // Draw the background of the altitude indicator
+            g.FillRectangle(Brushes.White, altitudeLineX1 - 2, altitudeLineY1, 2, altitudeLineY2 - altitudeLineY1);
+
+            // Draw the altitude scale
+            int scaleIncrement = 50;
+            int maxAltitude = altitudeValue + 100; // Display 100 units above the current altitude
+            int minAltitude = altitudeValue - 100; // Display 100 units below the current altitude
+            for (int i = minAltitude; i <= maxAltitude; i += scaleIncrement)
+            {
+                int y = altitudeLineY2 - i * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
+                if (i >= minAltitude && i <= maxAltitude)
+                {
+                    g.DrawLine(Pens.White, altitudeLineX1, y, altitudeLineX1 + 10, y);
+                    if (i == altitudeValue)
+                    {
+                        g.FillRectangle(Brushes.DarkBlue, altitudeLineX1 + 15, y - 12, 60, 24); // Draw a box for the current altitude
+                        g.DrawString(i.ToString(), largeFont, largeBrush, altitudeLineX1 + 20, y - 10); // Display current altitude in a larger font
+                    }
+                    else
+                    {
+                        g.DrawString(i.ToString(), smallFont, smallBrush, altitudeLineX1 + 20, y - 7); // Display other altitudes in a smaller font
+                    }
+                }
+            }
+
+            // Draw horizon line
+            int horizonY = altitudeLineY2 - 50 * (altitudeLineY2 - altitudeLineY1) / 100;
+            g.DrawLine(Pens.White, altitudeLineX1 - 10, horizonY, altitudeLineX1 + 10, horizonY);
+
+            // Draw pitch indications
+            for (int i = -30; i <= 30; i += 10)
+            {
+                int pitchY = altitudeLineY2 - (50 + i) * (altitudeLineY2 - altitudeLineY1) / 100;
+                g.DrawLine(Pens.White, altitudeLineX1 - 10, pitchY, altitudeLineX1 + 10, pitchY);
+            }
+
+            // Draw dynamic altitude pointer based on the variable altitudeValue
+            int pointerY = altitudeLineY2 - altitudeValue * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
+            g.FillPolygon(Brushes.White, new Point[] { new Point(altitudeLineX1 - 5, pointerY), new Point(altitudeLineX1 - 15, pointerY + 5), new Point(altitudeLineX1 - 15, pointerY - 5) });
+            // Calculate the y-coordinate for the current altitude box
+            int boxY = altitudeLineY2 - altitudeValue * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
+
+            // Calculate the y-coordinate for the text position (slightly above the box)
+            int textY = boxY - 10;
+
+            // Draw the current altitude box
+            g.FillRectangle(Brushes.DarkBlue, altitudeLineX1 + 15, boxY - 12, 60, 24);
+
+            // Draw the altitude value inside the box
+            g.DrawString(altitudeValue.ToString(), largeFont, largeBrush, altitudeLineX1 + 20, boxY - 10);
+
+            // Draw the altitude text
+            SizeF altitudeTextSize = g.MeasureString(altitudeText, largeFont);
+            g.DrawString(altitudeText, largeFont, largeBrush, altitudeLineX1 + 20, altitudeLineY2 - altitudeTextSize.Height - 5);
+
+        }
+
+        private void DrawSpeedIndicator(Graphics g, string speedText,int speedValue)
         {
             // Define font and brush for drawing the text
-            Font font = new Font("Arial", 8);
+            Font font = new Font("Arial", 9);
             Brush brush = Brushes.White;
 
             // Define the line coordinates for the altitude indicator
-            int altitudeLineX1 = 10; // X-coordinate of the line start
-            int altitudeLineX2 = 10; // X-coordinate of the line end
-            int altitudeLineY1 = 15; // Y-coordinate of the line start
-            int altitudeLineY2 = glControl1.Height - 15; // Y-coordinate of the line end
+            int speedLineX1 = 280; // X-coordinate of the line start
+            int speedLineX2 = 280; // X-coordinate of the line end
+            int speedLineY1 = 20; // Y-coordinate of the line start
+            int speedLineY2 = glControl1.Height - 20; // Y-coordinate of the line end
 
-            // Draw the altitude line
-            Pen altitudePen = new Pen(Color.Yellow, 2);
-            g.DrawLine(altitudePen, altitudeLineX1, altitudeLineY1, altitudeLineX2, altitudeLineY2);
+            // Draw the background of the altitude indicator
+            g.FillRectangle(Brushes.White, speedLineX1 - 2, speedLineY1, 2, speedLineY2 - speedLineY1);
 
-            // Show the altitude value in the middle of the altitude line
-            SizeF altitudeTextSize = g.MeasureString(altitudeText, font);
-            int altitudeTextXPos = altitudeLineX2 + 10; // X-coordinate for the altitude text
-            int altitudeTextYPos = (altitudeLineY1 + altitudeLineY2) / 2 - (int)altitudeTextSize.Height / 2; // Y-coordinate for the altitude text
-            g.DrawString(altitudeText, font, brush, altitudeTextXPos, altitudeTextYPos);
+            // Draw the altitude scale
+            for (int i = speedValue - 60; i <= speedValue + 60; i += 100)
+            {
+                int y = speedLineY2 - i * (speedLineY2 - speedLineY1) / 100;
+                g.DrawLine(Pens.White, speedLineX1, y, speedLineX1 + 10, y);
+                g.DrawString(i.ToString(), font, brush, speedLineX1 + 15, y - font.Height / 2);
+            }
 
-            //// Define the line coordinates for the speed indicator
-            //int speedLineX1 = glControl1.Width - 30; // X-coordinate of the line start
-            //int speedLineX2 = glControl1.Width - 30; // X-coordinate of the line end
-            //int speedLineY1 = 50; // Y-coordinate of the line start
-            //int speedLineY2 = glControl1.Height - 50; // Y-coordinate of the line end
+            // Draw horizon line
+            int horizonY = speedLineY2 - 50 * (speedLineY2 - speedLineY1) / 100;
+            g.DrawLine(Pens.White, speedLineX1 - 15, horizonY, speedLineX1 + 15, horizonY);
 
-            //// Draw the speed line
-            //Pen speedPen = new Pen(Color.Yellow, 2);
-            //g.DrawLine(speedPen, speedLineX1, speedLineY1, speedLineX2, speedLineY2);
+            // Draw pitch indications
+            for (int i = -30; i <= 30; i += 10)
+            {
+                int pitchY = speedLineY2 - (50 + i) * (speedLineY2 - speedLineY1) / 100;
+                g.DrawLine(Pens.White, speedLineX1 - 10, pitchY, speedLineX1 + 10, pitchY);
+            }
 
-            //// Show the speed value in the middle of the speed line
-            //string speedText = "Speed: 0"; // Replace 0 with the actual speed value
-            //SizeF speedTextSize = g.MeasureString(speedText, font);
-            //int speedTextXPos = speedLineX2 + 10; // X-coordinate for the speed text
-            //int speedTextYPos = (speedLineY1 + speedLineY2) / 2 - (int)speedTextSize.Height / 2; // Y-coordinate for the speed text
-            //g.DrawString(speedText, font, brush, speedTextXPos, speedTextYPos);
-            GL.End();
+            // Draw dynamic altitude pointer
+            int pointerY = speedLineY2 - speedValue * (speedLineY2 - speedLineY1) / 100;
+            g.FillPolygon(Brushes.White, new Point[] { new Point(speedLineX1 - 5, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
+
+            // Draw altitude text
+            SizeF altitudeTextSize = g.MeasureString(speedText, font);
+            g.DrawString(speedText, font, brush, speedLineX1 + 20, speedLineY2 - altitudeTextSize.Height - 5);
         }
+
 
         #endregion
 
@@ -698,6 +778,11 @@ namespace konuralprocketGS
         private void button13_Click(object sender, EventArgs e)
         {
             temizle1();
+            if(label47.Text == "0")
+            {
+                label47.Text = "20";
+            }
+            glControl1.Invalidate();        
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -819,39 +904,9 @@ namespace konuralprocketGS
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
-            try
+         for (int i = 0; i <= 3000; i += 20) 
             {
-                if (by==true)
-                {
-                    if (y < 360)
-                        y += 2;
-                    else
-                        y = 0;
-                    label16.Text = y.ToString();
-
-                }
-                if (bx==true)
-                {
-                    if (x < 360)
-                        x += 2;
-                    else
-                        x = 0;
-                    label15.Text = x.ToString();
-                }
-                if (bz==true)
-                {
-                    if (z < 360)
-                        z += 2;
-                    else
-                        z = 0;
-                    label17.Text = z.ToString();
-                }
-                // glControl.Invalidate();
-            }
-            catch (Exception)
-            {
-
-                throw;
+                label44.Text = i.ToString();
             }
         }
 
