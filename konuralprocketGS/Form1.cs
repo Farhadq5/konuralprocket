@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.ExtendedProperties;
 using GMap.NET;
 using GMap.NET.MapProviders;
 using GMap.NET.WindowsForms;
@@ -7,11 +6,11 @@ using GMap.NET.WindowsForms.Markers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -52,8 +51,8 @@ namespace konuralprocketGS
         {
             PopulateCOMPorts();
             PopulateBaudRates();
-            timer1.Interval=1;
-            
+            timer1.Interval = 1;
+
         }
         private void DataTimer_Tick(object sender, EventArgs e)
         {
@@ -72,11 +71,11 @@ namespace konuralprocketGS
         #region opengl
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-            string altitudeText =  label47.Text;           
+            string altitudeText = label47.Text;
             int altitudeValue = int.Parse(altitudeText);
             string speed = label44.Text;
             int speedvalue = int.Parse(speed);
-            
+
 
             float step = 1.0f;
             float topla = step;
@@ -111,14 +110,14 @@ namespace konuralprocketGS
 
             glControl1.SwapBuffers();
 
-            DrawSpeedIndicator(e.Graphics,speed,speedvalue);
-            DrawAltitudeIndicator(e.Graphics,altitudeText,altitudeValue);
+            DrawSpeedIndicator(e.Graphics, speed, speedvalue);
+            DrawAltitudeIndicator(e.Graphics, altitudeText, altitudeValue);
 
             GL.End();
 
         }
 
-       
+
 
         private void DrawRocketComponents(float step, float topla, float radius)
         {
@@ -151,7 +150,7 @@ namespace konuralprocketGS
             GL.Vertex3(0, 0, -100);
             GL.Vertex3(0, 0, 100);
 
-            
+
 
             GL.End();
 
@@ -338,60 +337,124 @@ namespace konuralprocketGS
             g.FillRectangle(Brushes.White, altitudeLineX1 - 2, altitudeLineY1, 2, altitudeLineY2 - altitudeLineY1);
 
             // Draw the altitude scale
-            int scaleIncrement = 50;
-            int maxAltitude = altitudeValue + 100; // Display 100 units above the current altitude
-            int minAltitude = altitudeValue - 100; // Display 100 units below the current altitude
-            for (int i = minAltitude; i <= maxAltitude; i += scaleIncrement)
+            int scaleIncrement = altitudeValue <= 1000 ? 20 : 100; // Change the scale based on altitude
+                                                                   //int maxAltitude = altitudeValue + 100; // Display 100 units above the current altitude
+                                                                   //int minAltitude = altitudeValue - 100; // Display 100 units below the current altitude
+
+            //for (int i = minAltitude; i <= maxAltitude; i += scaleIncrement)
+            //{
+            //    int y = altitudeLineY2 - i * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
+
+            //    if (i >= minAltitude && i <= maxAltitude)
+            //    {
+            //        if (i != altitudeValue) // Exclude the current altitude from moving
+            //        {
+            //            int x = altitudeLineX1 + 20; // X-coordinate for drawing text
+            //            int textY = y - 7; // Y-coordinate for drawing text
+            //            g.DrawString(i.ToString(), smallFont, smallBrush, x, textY); // Display other altitudes in a smaller font
+            //        }
+            //    }
+            //}
+
+            List<(int Altitude, float Y)> pitchLines = new List<(int, float)>();
+
+            // Determine the total number of pitch lines to be drawn
+            int totalPitchLines = 11; // We want exactly 11 lines to ensure the current altitude is at the center
+
+            // Calculate the interval between each pitch line
+            float pitchInterval = (float)(altitudeLineY2 - altitudeLineY1) / (totalPitchLines - 1);
+
+            // Calculate the altitude value for the fifth line (middle line)
+            int middleAltitude = altitudeValue;
+
+            // Specify the vertical offset for moving the middle line (adjust as needed)
+            float verticalOffset = 0; // Adjust the offset value to move the middle line up or down
+
+            // Calculate the Y-coordinate for the fifth line with the vertical offset
+            float middleLineY = altitudeLineY2 - (totalPitchLines / 2) * pitchInterval + verticalOffset;
+
+            // Initialize the pitch lines with their initial altitudes and Y-coordinates
+            for (int i = 0; i < totalPitchLines; i++)
             {
-                int y = altitudeLineY2 - i * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
-                if (i >= minAltitude && i <= maxAltitude)
+                int altitudeOffset = i - totalPitchLines / 2; // Offset from the middle line
+
+                // Calculate altitude based on the rules provided
+                int altitude;
+                if (altitudeValue < 500)
                 {
-                    g.DrawLine(Pens.White, altitudeLineX1, y, altitudeLineX1 + 10, y);
-                    if (i == altitudeValue)
-                    {
-                        g.FillRectangle(Brushes.DarkBlue, altitudeLineX1 + 15, y - 12, 60, 24); // Draw a box for the current altitude
-                        g.DrawString(i.ToString(), largeFont, largeBrush, altitudeLineX1 + 20, y - 10); // Display current altitude in a larger font
-                    }
-                    else
-                    {
-                        g.DrawString(i.ToString(), smallFont, smallBrush, altitudeLineX1 + 20, y - 7); // Display other altitudes in a smaller font
-                    }
+                    altitude = middleAltitude + altitudeOffset * 10;
+                }
+                else if (altitudeValue < 1000)
+                {
+                    altitude = middleAltitude + altitudeOffset * 50;
+                }
+                else
+                {
+                    altitude = middleAltitude + altitudeOffset * 100;
+                }
+
+                // For the middle line, set altitude to 0
+                if (altitudeOffset == 0)
+                {
+                    altitude = 0;
+                }
+
+                // Adjust altitude value if altitude is greater than or equal to 3000
+                if (altitude >= 3000)
+                {
+                    altitude = middleAltitude + altitudeOffset * 100;
+                }
+
+                float y = middleLineY - altitudeOffset * pitchInterval;
+                pitchLines.Add((altitude, y));
+            }
+
+            // Draw the pitch indications and display their corresponding altitude values          
+            foreach (var pitchLine in pitchLines)
+            {
+                Pen lineColor;
+                if (pitchLine.Altitude == 0) // Check if it's the middle line
+                {
+                    lineColor = Pens.Lime; // Set color to bright green for the middle line
+                }
+                else
+                {
+                    lineColor = (pitchLine.Altitude >= 3000) ? Pens.Red : Pens.White; // Change line color to red for altitudes greater than or equal to 3000
+                }
+
+                g.DrawLine(lineColor, altitudeLineX1 - 10, pitchLine.Y, altitudeLineX1 + 10, pitchLine.Y);
+
+                // Display altitude value for non-middle lines
+                if (pitchLine.Altitude != 0)
+                {
+                    g.DrawString(pitchLine.Altitude.ToString(), smallFont, smallBrush, altitudeLineX1 + 20, pitchLine.Y - 7);
                 }
             }
 
-            // Draw horizon line
-            int horizonY = altitudeLineY2 - 50 * (altitudeLineY2 - altitudeLineY1) / 100;
-            g.DrawLine(Pens.White, altitudeLineX1 - 10, horizonY, altitudeLineX1 + 10, horizonY);
-
-            // Draw pitch indications
-            for (int i = -30; i <= 30; i += 10)
-            {
-                int pitchY = altitudeLineY2 - (50 + i) * (altitudeLineY2 - altitudeLineY1) / 100;
-                g.DrawLine(Pens.White, altitudeLineX1 - 10, pitchY, altitudeLineX1 + 10, pitchY);
-            }
-
-            // Draw dynamic altitude pointer based on the variable altitudeValue
-            int pointerY = altitudeLineY2 - altitudeValue * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
-            g.FillPolygon(Brushes.White, new Point[] { new Point(altitudeLineX1 - 5, pointerY), new Point(altitudeLineX1 - 15, pointerY + 5), new Point(altitudeLineX1 - 15, pointerY - 5) });
-            // Calculate the y-coordinate for the current altitude box
-            int boxY = altitudeLineY2 - altitudeValue * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
-
-            // Calculate the y-coordinate for the text position (slightly above the box)
-            int textY = boxY - 10;
-
             // Draw the current altitude box
-            g.FillRectangle(Brushes.DarkBlue, altitudeLineX1 + 15, boxY - 12, 60, 24);
+            int boxHeight = 25; // Adjust as needed
+            int boxY = 105;
+            int boxTopY = boxY - boxHeight / 2; // Calculate the top-left corner's y-coordinate of the box to center it vertically
+
+            // Define the transparency level (alpha value)
+            int transparency = 60; // Adjust the transparency level as needed (0 for fully transparent, 255 for fully opaque)
+
+            // Create a transparent color
+            Color transparentGray = Color.FromArgb(transparency, Color.Gray);
+
+            //g.FillRectangle(Brushes.Gray, altitudeLineX1 + boxX, boxTopY, 60, boxHeight);
+
+            // Draw the current altitude box with transparency
+            g.FillRectangle(new SolidBrush(transparentGray), altitudeLineX1 + 15, boxTopY, 60, boxHeight);
 
             // Draw the altitude value inside the box
-            g.DrawString(altitudeValue.ToString(), largeFont, largeBrush, altitudeLineX1 + 20, boxY - 10);
+            int boxTextY = boxTopY + (boxHeight - largeFont.Height) / 2; // Y-coordinate for drawing text inside the box
+            g.DrawString(altitudeValue.ToString(), largeFont, largeBrush, altitudeLineX1 + 20, boxTextY);
 
-            // Draw the altitude text
-            SizeF altitudeTextSize = g.MeasureString(altitudeText, largeFont);
-            g.DrawString(altitudeText, largeFont, largeBrush, altitudeLineX1 + 20, altitudeLineY2 - altitudeTextSize.Height - 5);
-
+            GL.End();
         }
 
-        private void DrawSpeedIndicator(Graphics g, string speedText,int speedValue)
+        private void DrawSpeedIndicator(Graphics g, string speedText, int speedValue)
         {
             // Define font and brush for drawing the text
             Font font = new Font("Arial", 9);
@@ -462,8 +525,8 @@ namespace konuralprocketGS
             markerOverlay.Markers.Add(currentPosationMarker);
 
 
-            mapcontrol.Position=new PointLatLng(lat, lng);
-            mapcontrol.DragButton=MouseButtons.Right;
+            mapcontrol.Position = new PointLatLng(lat, lng);
+            mapcontrol.DragButton = MouseButtons.Right;
         }
         private void UpdateMapPosition(double latitude, double longitude)
         {
@@ -473,7 +536,7 @@ namespace konuralprocketGS
             markerOverlay.Markers.Add(positionMarker);
             // Set the map center to the new position
             mapcontrol.Position = new PointLatLng(latitude, longitude);
-            mapcontrol.Zoom= 15;
+            mapcontrol.Zoom = 15;
         }
 
         #endregion
@@ -503,8 +566,8 @@ namespace konuralprocketGS
             markerOverlay.Markers.Add(currentPosationMarker);
 
 
-            mapcontrol2.Position=new PointLatLng(lat, lng);
-            mapcontrol2.DragButton=MouseButtons.Right;
+            mapcontrol2.Position = new PointLatLng(lat, lng);
+            mapcontrol2.DragButton = MouseButtons.Right;
         }
         private void UpdateMapPosition2(double latitude, double longitude)
         {
@@ -514,7 +577,7 @@ namespace konuralprocketGS
             markerOverlay.Markers.Add(positionMarker);
             // Set the map center to the new position
             mapcontrol.Position = new PointLatLng(latitude, longitude);
-            mapcontrol.Zoom= 15;
+            mapcontrol.Zoom = 15;
         }
 
         #endregion
@@ -544,25 +607,25 @@ namespace konuralprocketGS
             int bytesRead = 0;
             char lastchar = '\0';
 
-            while (true) 
+            while (true)
             {
-                bytesRead+= await stream.ReadAsync(buffer, bytesRead, 1);
+                bytesRead += await stream.ReadAsync(buffer, bytesRead, 1);
 
-                if (bytesRead>0)
+                if (bytesRead > 0)
                 {
                     char currentCahr = (char)buffer[bytesRead - 1];
 
                     if (currentCahr == '\n' && lastchar == '\r')
                     {
                         //return a newline character return the compleat line
-                        return Encoding.ASCII.GetString(buffer,0,bytesRead - 2);
+                        return Encoding.ASCII.GetString(buffer, 0, bytesRead - 2);
                     }
                     lastchar = currentCahr;
                 }
             }
         }
 
-       
+
         private void parsedata(string data)
         {
             Console.WriteLine($"recived data {data}");
@@ -611,13 +674,13 @@ namespace konuralprocketGS
             dataGridView1.Rows[rowIndex].Cells["Column19"].Value = Y;
             dataGridView1.Rows[rowIndex].Cells["Column20"].Value = Z;
         }
-        
+
         // tempreture and pressure controll
         private void updatebmp(string temp, string pressure, string altitude)
         {
             label43.Text = temp;
             label41.Text = pressure;
-            label47.Text= altitude;
+            label47.Text = altitude;
 
 
             int rowIndex = dataGridView1.Rows.Add();
@@ -641,12 +704,12 @@ namespace konuralprocketGS
                 {
                     txtlat.Text = lat1.ToString();
                     txtlong.Text = lng1.ToString();
-                   
+
                     UpdateMapPosition(lat1, lng1);
 
                     // gps controll 2 for the second map update it when its necessary
-                    label39.Text= lat1.ToString();
-                    label7.Text= lng1.ToString();
+                    label39.Text = lat1.ToString();
+                    label7.Text = lng1.ToString();
 
                     UpdateMapPosition2(lat1, lng1);
 
@@ -777,17 +840,37 @@ namespace konuralprocketGS
 
         private void button13_Click(object sender, EventArgs e)
         {
-            temizle1();
-            if(label47.Text == "0")
+            if (int.TryParse(label47.Text, out int altitudeValue))
             {
-                label47.Text = "20";
+                // Increment the altitude value by 20
+                altitudeValue += 25;
+
+                // Update label47 with the new altitude value
+                label47.Text = altitudeValue.ToString();
+
+                // Trigger the paint event to redraw the altitude indicator with the updated altitude value
+                glControl1.Invalidate();
             }
-            glControl1.Invalidate();        
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
 
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            if (int.TryParse(label47.Text, out int altitudeValue))
+            {
+                // Increment the altitude value by 20
+                altitudeValue -= 20;
+
+                // Update label47 with the new altitude value
+                label47.Text = altitudeValue.ToString();
+
+                // Trigger the paint event to redraw the altitude indicator with the updated altitude value
+                glControl1.Invalidate();
+            }
         }
 
         // this button get the values from datagridview to exel file
@@ -842,7 +925,7 @@ namespace konuralprocketGS
             //GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             //GL.Enable(EnableCap.DepthTest);
         }
-        
+
 
         // this button get the values from datagridview to text file
         private void button15_Click_1(object sender, EventArgs e)
@@ -886,7 +969,7 @@ namespace konuralprocketGS
             }
 
         }
-       private void temizle1()
+        private void temizle1()
         {
             label41.Text = "0";
             label42.Text = "0";
@@ -904,7 +987,7 @@ namespace konuralprocketGS
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
-         for (int i = 0; i <= 3000; i += 20) 
+            for (int i = 0; i <= 3000; i += 20)
             {
                 label44.Text = i.ToString();
             }
