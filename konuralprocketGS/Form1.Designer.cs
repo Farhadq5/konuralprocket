@@ -65,7 +65,7 @@
             this.label18 = new System.Windows.Forms.Label();
             this.textBox7 = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
-            this.mapcontrol2 = new GMap.NET.WindowsForms.GMapControl();
+            this.mapcontrolstaite = new GMap.NET.WindowsForms.GMapControl();
             this.groupBox11 = new System.Windows.Forms.GroupBox();
             this.label62 = new System.Windows.Forms.Label();
             this.button14 = new System.Windows.Forms.Button();
@@ -87,7 +87,7 @@
             this.label13 = new System.Windows.Forms.Label();
             this.txtlong = new System.Windows.Forms.TextBox();
             this.txtlat = new System.Windows.Forms.TextBox();
-            this.mapcontrol = new GMap.NET.WindowsForms.GMapControl();
+            this.mapcontrolrocket = new GMap.NET.WindowsForms.GMapControl();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.Column2 = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Column9 = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -374,7 +374,7 @@
             this.groupBox4.Controls.Add(this.label18);
             this.groupBox4.Controls.Add(this.textBox7);
             this.groupBox4.Controls.Add(this.label4);
-            this.groupBox4.Controls.Add(this.mapcontrol2);
+            this.groupBox4.Controls.Add(this.mapcontrolstaite);
             this.groupBox4.Location = new System.Drawing.Point(2, 177);
             this.groupBox4.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox4.Name = "groupBox4";
@@ -420,34 +420,34 @@
             this.label4.TabIndex = 5;
             this.label4.Text = "lat";
             // 
-            // mapcontrol2
+            // mapcontrolstaite
             // 
-            this.mapcontrol2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.mapcontrolstaite.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.mapcontrol2.Bearing = 0F;
-            this.mapcontrol2.CanDragMap = true;
-            this.mapcontrol2.EmptyTileColor = System.Drawing.Color.Navy;
-            this.mapcontrol2.GrayScaleMode = false;
-            this.mapcontrol2.HelperLineOption = GMap.NET.WindowsForms.HelperLineOptions.DontShow;
-            this.mapcontrol2.LevelsKeepInMemory = 5;
-            this.mapcontrol2.Location = new System.Drawing.Point(4, 15);
-            this.mapcontrol2.Margin = new System.Windows.Forms.Padding(2);
-            this.mapcontrol2.MarkersEnabled = true;
-            this.mapcontrol2.MaxZoom = 2;
-            this.mapcontrol2.MinZoom = 2;
-            this.mapcontrol2.MouseWheelZoomEnabled = true;
-            this.mapcontrol2.MouseWheelZoomType = GMap.NET.MouseWheelZoomType.MousePositionAndCenter;
-            this.mapcontrol2.Name = "mapcontrol2";
-            this.mapcontrol2.NegativeMode = false;
-            this.mapcontrol2.PolygonsEnabled = true;
-            this.mapcontrol2.RetryLoadTile = 0;
-            this.mapcontrol2.RoutesEnabled = true;
-            this.mapcontrol2.ScaleMode = GMap.NET.WindowsForms.ScaleModes.Integer;
-            this.mapcontrol2.SelectedAreaFillColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(65)))), ((int)(((byte)(105)))), ((int)(((byte)(225)))));
-            this.mapcontrol2.ShowTileGridLines = false;
-            this.mapcontrol2.Size = new System.Drawing.Size(314, 203);
-            this.mapcontrol2.TabIndex = 1;
-            this.mapcontrol2.Zoom = 0D;
+            this.mapcontrolstaite.Bearing = 0F;
+            this.mapcontrolstaite.CanDragMap = true;
+            this.mapcontrolstaite.EmptyTileColor = System.Drawing.Color.Navy;
+            this.mapcontrolstaite.GrayScaleMode = false;
+            this.mapcontrolstaite.HelperLineOption = GMap.NET.WindowsForms.HelperLineOptions.DontShow;
+            this.mapcontrolstaite.LevelsKeepInMemory = 5;
+            this.mapcontrolstaite.Location = new System.Drawing.Point(4, 15);
+            this.mapcontrolstaite.Margin = new System.Windows.Forms.Padding(2);
+            this.mapcontrolstaite.MarkersEnabled = true;
+            this.mapcontrolstaite.MaxZoom = 2;
+            this.mapcontrolstaite.MinZoom = 2;
+            this.mapcontrolstaite.MouseWheelZoomEnabled = true;
+            this.mapcontrolstaite.MouseWheelZoomType = GMap.NET.MouseWheelZoomType.MousePositionAndCenter;
+            this.mapcontrolstaite.Name = "mapcontrolstaite";
+            this.mapcontrolstaite.NegativeMode = false;
+            this.mapcontrolstaite.PolygonsEnabled = true;
+            this.mapcontrolstaite.RetryLoadTile = 0;
+            this.mapcontrolstaite.RoutesEnabled = true;
+            this.mapcontrolstaite.ScaleMode = GMap.NET.WindowsForms.ScaleModes.Integer;
+            this.mapcontrolstaite.SelectedAreaFillColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(65)))), ((int)(((byte)(105)))), ((int)(((byte)(225)))));
+            this.mapcontrolstaite.ShowTileGridLines = false;
+            this.mapcontrolstaite.Size = new System.Drawing.Size(314, 203);
+            this.mapcontrolstaite.TabIndex = 1;
+            this.mapcontrolstaite.Zoom = 0D;
             // 
             // groupBox11
             // 
@@ -701,7 +701,7 @@
             this.groupBox2.Controls.Add(this.label13);
             this.groupBox2.Controls.Add(this.txtlong);
             this.groupBox2.Controls.Add(this.txtlat);
-            this.groupBox2.Controls.Add(this.mapcontrol);
+            this.groupBox2.Controls.Add(this.mapcontrolrocket);
             this.groupBox2.Location = new System.Drawing.Point(328, 177);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox2.Name = "groupBox2";
@@ -747,35 +747,35 @@
             this.txtlat.Size = new System.Drawing.Size(76, 20);
             this.txtlat.TabIndex = 2;
             // 
-            // mapcontrol
+            // mapcontrolrocket
             // 
-            this.mapcontrol.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.mapcontrolrocket.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.mapcontrol.Bearing = 0F;
-            this.mapcontrol.CanDragMap = true;
-            this.mapcontrol.EmptyTileColor = System.Drawing.Color.Navy;
-            this.mapcontrol.GrayScaleMode = false;
-            this.mapcontrol.HelperLineOption = GMap.NET.WindowsForms.HelperLineOptions.DontShow;
-            this.mapcontrol.LevelsKeepInMemory = 5;
-            this.mapcontrol.Location = new System.Drawing.Point(4, 14);
-            this.mapcontrol.Margin = new System.Windows.Forms.Padding(2);
-            this.mapcontrol.MarkersEnabled = true;
-            this.mapcontrol.MaxZoom = 2;
-            this.mapcontrol.MinZoom = 2;
-            this.mapcontrol.MouseWheelZoomEnabled = true;
-            this.mapcontrol.MouseWheelZoomType = GMap.NET.MouseWheelZoomType.MousePositionAndCenter;
-            this.mapcontrol.Name = "mapcontrol";
-            this.mapcontrol.NegativeMode = false;
-            this.mapcontrol.PolygonsEnabled = true;
-            this.mapcontrol.RetryLoadTile = 0;
-            this.mapcontrol.RoutesEnabled = true;
-            this.mapcontrol.ScaleMode = GMap.NET.WindowsForms.ScaleModes.Integer;
-            this.mapcontrol.SelectedAreaFillColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(65)))), ((int)(((byte)(105)))), ((int)(((byte)(225)))));
-            this.mapcontrol.ShowTileGridLines = false;
-            this.mapcontrol.Size = new System.Drawing.Size(312, 202);
-            this.mapcontrol.TabIndex = 0;
-            this.mapcontrol.Zoom = 0D;
-            this.mapcontrol.Load += new System.EventHandler(this.mapcontrol_Load);
+            this.mapcontrolrocket.Bearing = 0F;
+            this.mapcontrolrocket.CanDragMap = true;
+            this.mapcontrolrocket.EmptyTileColor = System.Drawing.Color.Navy;
+            this.mapcontrolrocket.GrayScaleMode = false;
+            this.mapcontrolrocket.HelperLineOption = GMap.NET.WindowsForms.HelperLineOptions.DontShow;
+            this.mapcontrolrocket.LevelsKeepInMemory = 5;
+            this.mapcontrolrocket.Location = new System.Drawing.Point(4, 14);
+            this.mapcontrolrocket.Margin = new System.Windows.Forms.Padding(2);
+            this.mapcontrolrocket.MarkersEnabled = true;
+            this.mapcontrolrocket.MaxZoom = 2;
+            this.mapcontrolrocket.MinZoom = 2;
+            this.mapcontrolrocket.MouseWheelZoomEnabled = true;
+            this.mapcontrolrocket.MouseWheelZoomType = GMap.NET.MouseWheelZoomType.MousePositionAndCenter;
+            this.mapcontrolrocket.Name = "mapcontrolrocket";
+            this.mapcontrolrocket.NegativeMode = false;
+            this.mapcontrolrocket.PolygonsEnabled = true;
+            this.mapcontrolrocket.RetryLoadTile = 0;
+            this.mapcontrolrocket.RoutesEnabled = true;
+            this.mapcontrolrocket.ScaleMode = GMap.NET.WindowsForms.ScaleModes.Integer;
+            this.mapcontrolrocket.SelectedAreaFillColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(65)))), ((int)(((byte)(105)))), ((int)(((byte)(225)))));
+            this.mapcontrolrocket.ShowTileGridLines = false;
+            this.mapcontrolrocket.Size = new System.Drawing.Size(312, 202);
+            this.mapcontrolrocket.TabIndex = 0;
+            this.mapcontrolrocket.Zoom = 0D;
+            this.mapcontrolrocket.Load += new System.EventHandler(this.mapcontrol_Load);
             // 
             // dataGridView1
             // 
@@ -1862,7 +1862,7 @@
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.TextBox txtlong;
         private System.Windows.Forms.TextBox txtlat;
-        private GMap.NET.WindowsForms.GMapControl mapcontrol;
+        private GMap.NET.WindowsForms.GMapControl mapcontrolrocket;
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.GroupBox groupBox3;
@@ -1899,7 +1899,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Column20;
         private System.Windows.Forms.DataGridViewTextBoxColumn Column21;
         private System.Windows.Forms.RichTextBox richTextBox1;
-        private GMap.NET.WindowsForms.GMapControl mapcontrol2;
+        private GMap.NET.WindowsForms.GMapControl mapcontrolstaite;
         private System.Windows.Forms.TextBox textBox9;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.TextBox textBox7;

@@ -6,7 +6,6 @@ using GMap.NET.WindowsForms.Markers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
@@ -19,12 +18,16 @@ namespace konuralprocketGS
 {
     public partial class Form1 : Form
     {
+        //this tefine the glcontrol class as gyro
+        private GyroGL_Class gyroGL;
+
+        private mapcontrol map;
+
+        // veriables here to get value from gyro and oomfactor for glcontrol and marker for map
         private SerialPort serialPort;
         public double x = 0.0f, y = 0.0f, z = 0.0f;
-        bool by = false, bx = false, bz = false;
-        private string datarecive;
         private float zoomFactor = 1.0f;
-        Color renk1 = Color.White, renk2 = Color.Red;
+        private string datarecive;
         private readonly GMapOverlay markerOverlay = new GMapOverlay("marker");
         private readonly GMarkerGoogle currentPosationMarker = new GMarkerGoogle(new PointLatLng(40.839989, 31.155060), GMarkerGoogleType.blue_dot);
 
@@ -35,6 +38,16 @@ namespace konuralprocketGS
             InitializeGMap();
             InitializeGMap2();
 
+            //this code sends the Gmap option to the class
+            map = new mapcontrol(mapcontrolrocket, mapcontrolstaite);
+
+
+            //this code sends the glcontrol option to the class
+            gyroGL = new GyroGL_Class(glControl1);
+
+
+
+            //this code works in bakground for opening and closing the serialport
             backgroundWorker1 = new BackgroundWorker();
             backgroundWorker1.DoWork += backgroundWorker_DoWork;
             backgroundWorker1.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
@@ -43,8 +56,10 @@ namespace konuralprocketGS
             serialtimer.Tick += DataTimer_Tick;
             serialtimer.Interval = 100;
             serialtimer.Start();
-            //dataGridView1.Columns.Add("GPS1 Latitude", "GPS1 Latitude");
-            //dataGridView1.Columns.Add("GPS1 Longitude", "GPS1 Longitude");
+
+            //this code gets the value from label the speed and altitude and sends it to class
+            gyroGL.altitude = label47.Text;
+            gyroGL.speed = label44.Text;
 
         }
         private void Form1_Load(object sender, EventArgs e)
@@ -71,9 +86,9 @@ namespace konuralprocketGS
         #region opengl
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-            string altitudeText = label47.Text;
-            int altitudeValue = int.Parse(altitudeText);
-            string speed = label44.Text;
+            string altitude = label44.Text;
+            int altitudeValue = int.Parse(altitude);
+            string speed = label47.Text;
             int speedvalue = int.Parse(speed);
 
 
@@ -104,475 +119,50 @@ namespace konuralprocketGS
 
 
 
-            DrawRocketComponents(step, topla, radius);
+            gyroGL.DrawRocketComponents(step, topla, radius);
 
-            DrawCoordinateAxes();
-
+            gyroGL.DrawCoordinateAxes();
             glControl1.SwapBuffers();
 
-            DrawSpeedIndicator(e.Graphics, speed, speedvalue);
-            DrawAltitudeIndicator(e.Graphics, altitudeText, altitudeValue);
-
-            GL.End();
-
-        }
-
-
-
-        private void DrawRocketComponents(float step, float topla, float radius)
-        {
-            silindir(step, topla, radius, 3, -8);
-            koni(0.01f, 0.01f, radius, 3.0f, 3, 8);
-            koni(0.01f, 0.01f, radius, 2.0f, -7.0f, -14.0f);
-            silindir(0.01f, topla, 0.07f, 9, 3);
-            silindir(0.01f, topla, 0.2f, 9, 9.3f);
-            Pervane(9.0f, 7.0f, 0.3f, 0.3f);
-            silindir(0.01f, topla, 0.2f, 7.3f, 7f);
-            Pervane(7.0f, 7.0f, 0.3f, 0.3f);
-        }
-
-        private void DrawCoordinateAxes()
-        {
-            GL.Begin(BeginMode.Lines);
-
-            // X-axis (red)
-            GL.Color3(Color.Red);
-            GL.Vertex3(-100, 0, 0);
-            GL.Vertex3(100, 0, 0);
-
-            // Y-axis (green)
-            GL.Color3(Color.Green);
-            GL.Vertex3(0, -100, 0);
-            GL.Vertex3(0, 100, 0);
-
-            // Z-axis (blue)
-            GL.Color3(Color.Blue);
-            GL.Vertex3(0, 0, -100);
-            GL.Vertex3(0, 0, 100);
-
-
-
-            GL.End();
-
-        }
-
-        private void glControl1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            // You can adjust the zoom sensitivity by changing the value in the next line
-            float zoomSensitivity = 0.1f;
-
-            // Update the zoom factor based on the mouse wheel delta
-            zoomFactor += e.Delta * zoomSensitivity;
-
-            // Ensure the zoom factor is within a reasonable range
-            zoomFactor = Math.Max(zoomFactor, 0.1f);
-            zoomFactor = Math.Min(zoomFactor, 10.0f);
-
-            // Redraw the OpenGL control
-            glControl1.Invalidate();
-        }
-        private void renk_ataması(float step)
-        {
-            if (step < 45)
-                GL.Color3(renk2);
-            else if (step < 90)
-                GL.Color3(renk1);
-            else if (step < 135)
-                GL.Color3(renk2);
-            else if (step < 180)
-                GL.Color3(renk1);
-            else if (step < 225)
-                GL.Color3(renk2);
-            else if (step < 270)
-                GL.Color3(renk1);
-            else if (step < 315)
-                GL.Color3(renk2);
-            else if (step < 360)
-                GL.Color3(renk1);
-        }
-        private void silindir(float step, float topla, float radius, float dikey1, float dikey2)
-        {
-            float eski_step = 0.1f;
-            GL.Begin(BeginMode.Quads);//Y EKSEN CIZIM DAİRENİN
-            while (step <= 360)
-            {
-                renk_ataması(step);
-                float ciz1_x = (float)(radius * Math.Cos(step * Math.PI / 180F));
-                float ciz1_y = (float)(radius * Math.Sin(step * Math.PI / 180F));
-                GL.Vertex3(ciz1_x, dikey1, ciz1_y);
-
-                float ciz2_x = (float)(radius * Math.Cos((step + 2) * Math.PI / 180F));
-                float ciz2_y = (float)(radius * Math.Sin((step + 2) * Math.PI / 180F));
-                GL.Vertex3(ciz2_x, dikey1, ciz2_y);
-
-                GL.Vertex3(ciz1_x, dikey2, ciz1_y);
-                GL.Vertex3(ciz2_x, dikey2, ciz2_y);
-                step += topla;
-            }
-            GL.End();
-            GL.Begin(BeginMode.Lines);
-            step = eski_step;
-            topla = step;
-            while (step <= 180)// UST KAPAK
-            {
-                renk_ataması(step);
-                float ciz1_x = (float)(radius * Math.Cos(step * Math.PI / 180F));
-                float ciz1_y = (float)(radius * Math.Sin(step * Math.PI / 180F));
-                GL.Vertex3(ciz1_x, dikey1, ciz1_y);
-
-                float ciz2_x = (float)(radius * Math.Cos((step + 180) * Math.PI / 180F));
-                float ciz2_y = (float)(radius * Math.Sin((step + 180) * Math.PI / 180F));
-                GL.Vertex3(ciz2_x, dikey1, ciz2_y);
-
-                GL.Vertex3(ciz1_x, dikey1, ciz1_y);
-                GL.Vertex3(ciz2_x, dikey1, ciz2_y);
-                step += topla;
-            }
-            step = eski_step;
-            topla = step;
-            while (step <= 180)//ALT KAPAK
-            {
-                renk_ataması(step);
-
-                float ciz1_x = (float)(radius * Math.Cos(step * Math.PI / 180F));
-                float ciz1_y = (float)(radius * Math.Sin(step * Math.PI / 180F));
-                GL.Vertex3(ciz1_x, dikey2, ciz1_y);
-
-                float ciz2_x = (float)(radius * Math.Cos((step + 180) * Math.PI / 180F));
-                float ciz2_y = (float)(radius * Math.Sin((step + 180) * Math.PI / 180F));
-                GL.Vertex3(ciz2_x, dikey2, ciz2_y);
-
-                GL.Vertex3(ciz1_x, dikey2, ciz1_y);
-                GL.Vertex3(ciz2_x, dikey2, ciz2_y);
-                step += topla;
-            }
-            GL.End();
-        }
-        private void koni(float step, float topla, float radius1, float radius2, float dikey1, float dikey2)
-        {
-            float eski_step = 0.1f;
-            GL.Begin(BeginMode.Lines);//Y EKSEN CIZIM DAİRENİN
-            while (step <= 360)
-            {
-                renk_ataması(step);
-                float ciz1_x = (float)(radius1 * Math.Cos(step * Math.PI / 180F));
-                float ciz1_y = (float)(radius1 * Math.Sin(step * Math.PI / 180F));
-                GL.Vertex3(ciz1_x, dikey1, ciz1_y);
-
-                float ciz2_x = (float)(radius2 * Math.Cos(step * Math.PI / 180F));
-                float ciz2_y = (float)(radius2 * Math.Sin(step * Math.PI / 180F));
-                GL.Vertex3(ciz2_x, dikey2, ciz2_y);
-                step += topla;
-            }
-            GL.End();
-
-            GL.Begin(BeginMode.Lines);
-            step = eski_step;
-            topla = step;
-            while (step <= 180)// UST KAPAK
-            {
-                renk_ataması(step);
-                float ciz1_x = (float)(radius2 * Math.Cos(step * Math.PI / 180F));
-                float ciz1_y = (float)(radius2 * Math.Sin(step * Math.PI / 180F));
-                GL.Vertex3(ciz1_x, dikey2, ciz1_y);
-
-                float ciz2_x = (float)(radius2 * Math.Cos((step + 180) * Math.PI / 180F));
-                float ciz2_y = (float)(radius2 * Math.Sin((step + 180) * Math.PI / 180F));
-                GL.Vertex3(ciz2_x, dikey2, ciz2_y);
-
-                GL.Vertex3(ciz1_x, dikey2, ciz1_y);
-                GL.Vertex3(ciz2_x, dikey2, ciz2_y);
-                step += topla;
-            }
-            step = eski_step;
-            topla = step;
-            GL.End();
-        }
-        private void Pervane(float yukseklik, float uzunluk, float kalinlik, float egiklik)
-        {
-            float radius = 10, angle = 45.0f;
-            GL.Begin(BeginMode.Quads);
-
-            GL.Color3(renk2);
-            GL.Vertex3(uzunluk, yukseklik, kalinlik);
-            GL.Vertex3(uzunluk, yukseklik + egiklik, -kalinlik);
-            GL.Vertex3(0, yukseklik + egiklik, -kalinlik);
-            GL.Vertex3(0, yukseklik, kalinlik);
-
-            GL.Color3(renk2);
-            GL.Vertex3(-uzunluk, yukseklik + egiklik, kalinlik);
-            GL.Vertex3(-uzunluk, yukseklik, -kalinlik);
-            GL.Vertex3(0, yukseklik, -kalinlik);
-            GL.Vertex3(0, yukseklik + egiklik, kalinlik);
-
-            GL.Color3(renk1);
-            GL.Vertex3(kalinlik, yukseklik, -uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik + egiklik, -uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik + egiklik, 0.0);//+
-            GL.Vertex3(kalinlik, yukseklik, 0.0);//-
-
-            GL.Color3(renk1);
-            GL.Vertex3(kalinlik, yukseklik + egiklik, +uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik, +uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik, 0.0);
-            GL.Vertex3(kalinlik, yukseklik + egiklik, 0.0);
-            GL.End();
-
-        }
-
-        private void DrawAltitudeIndicator(Graphics g, string altitudeText, int altitudeValue)
-        {
-            // Define font and brushes for drawing the text
-            Font largeFont = new Font("Arial", 12, FontStyle.Bold);
-            Font smallFont = new Font("Arial", 9);
-            Brush largeBrush = Brushes.White;
-            Brush smallBrush = Brushes.Gray;
-
-            // Define the coordinates for the altitude indicator
-            int altitudeLineX1 = 20; // X-coordinate of the line start
-            int altitudeLineY1 = 20; // Y-coordinate of the line start
-            int altitudeLineY2 = glControl1.Height - 20; // Y-coordinate of the line end
-
-            // Draw the background of the altitude indicator
-            g.FillRectangle(Brushes.Gray, altitudeLineX1 - 2, altitudeLineY1, 2, altitudeLineY2 - altitudeLineY1);
-
-            // Draw the altitude scale
-            int scaleIncrement = altitudeValue <= 1000 ? 20 : 100; // Change the scale based on altitude
-                                                                  
-
-            List<(int Altitude, float Y)> pitchLines = new List<(int, float)>();
-
-            // Determine the total number of pitch lines to be drawn
-            int totalPitchLines = 11; // We want exactly 11 lines to ensure the current altitude is at the center
-
-            // Calculate the interval between each pitch line
-            float pitchInterval = (float)(altitudeLineY2 - altitudeLineY1) / (totalPitchLines - 1);
-
-            // Calculate the altitude value for the fifth line (middle line)
-            int middleAltitude = altitudeValue;
-
-            // Specify the vertical offset for moving the middle line (adjust as needed)
-            float verticalOffset = 0; // Adjust the offset value to move the middle line up or down
-
-            // Calculate the Y-coordinate for the fifth line with the vertical offset
-            float middleLineY = altitudeLineY2 - (totalPitchLines / 2) * pitchInterval + verticalOffset;
-
-            // Initialize the pitch lines with their initial altitudes and Y-coordinates
-            for (int i = 0; i < totalPitchLines; i++)
-            {
-                int altitudeOffset = i - totalPitchLines / 2; // Offset from the middle line
-
-                // Calculate altitude based on the rules provided
-                int altitude;
-                if (altitudeValue < 500)
-                {
-                    altitude = middleAltitude + altitudeOffset * 10;
-                }
-                else if (altitudeValue < 1000)
-                {
-                    altitude = middleAltitude + altitudeOffset * 50;
-                }
-                else
-                {
-                    altitude = middleAltitude + altitudeOffset * 100;
-                }
-
-                // For the middle line, set altitude to 0
-                if (altitudeOffset == 0)
-                {
-                    altitude = 0;
-                }
-
-                // Adjust altitude value if altitude is greater than or equal to 3000
-                if (altitude >= 3000)
-                {
-                    altitude = middleAltitude + altitudeOffset * 100;
-                }
-
-                float y = middleLineY - altitudeOffset * pitchInterval;
-                pitchLines.Add((altitude, y));
-            }
-
-            // Draw the pitch indications and display their corresponding altitude values          
-            foreach (var pitchLine in pitchLines)
-            {
-                Pen lineColor;
-                if (pitchLine.Altitude == 0) // Check if it's the middle line
-                {
-                    lineColor = Pens.Lime; // Set color to bright green for the middle line
-                }
-                else
-                {
-                    lineColor = (pitchLine.Altitude >= 3000) ? Pens.Red : Pens.White; // Change line color to red for altitudes greater than or equal to 3000
-                }
-
-                g.DrawLine(lineColor, altitudeLineX1 - 10, pitchLine.Y, altitudeLineX1 + 10, pitchLine.Y);
-
-                // Display altitude value for non-middle lines
-                if (pitchLine.Altitude != 0)
-                {
-                    g.DrawString(pitchLine.Altitude.ToString(), smallFont, smallBrush, altitudeLineX1 + 20, pitchLine.Y - 7);
-                }
-            }
-
-            // Draw the current altitude box
-            int boxHeight = 25; // Adjust as needed
-            int boxY = 105;
-            int boxTopY = boxY - boxHeight / 2; // Calculate the top-left corner's y-coordinate of the box to center it vertically
-
-            // Define the transparency level (alpha value)
-            int transparency = 60; // Adjust the transparency level as needed (0 for fully transparent, 255 for fully opaque)
-
-            // Create a transparent color
-            Color transparentGray = Color.FromArgb(transparency, Color.Gray);
-
-            //g.FillRectangle(Brushes.Gray, altitudeLineX1 + boxX, boxTopY, 60, boxHeight);
-
-            // Draw the current altitude box with transparency
-            g.FillRectangle(new SolidBrush(transparentGray), altitudeLineX1 + 15, boxTopY, 60, boxHeight);
-
-            // Draw the altitude value inside the box
-            int boxTextY = boxTopY + (boxHeight - largeFont.Height) / 2; // Y-coordinate for drawing text inside the box
-            g.DrawString(altitudeValue.ToString(), largeFont, largeBrush, altitudeLineX1 + 20, boxTextY);
+            gyroGL.DrawSpeedIndicator(e.Graphics, speed, speedvalue);
+            gyroGL.DrawAltitudeIndicator(e.Graphics, altitude, altitudeValue);
 
             GL.End();
         }
-
-        private void DrawSpeedIndicator(Graphics g, string speedText, int speedValue)
-        {
-            // Define font and brush for drawing the text
-            Font font = new Font("Arial", 9);
-            Brush brush = Brushes.White;
-
-            // Define the line coordinates for the speed indicator
-            int speedLineX1 = 280; // X-coordinate of the line start
-            int speedLineY1 = 30; // Y-coordinate of the line start
-            int speedLineY2 = glControl1.Height - 30; // Y-coordinate of the line end
-
-            // Calculate the number of lines to be drawn
-            int totalLines = 11;
-
-            // Calculate the interval between each pitch line
-            float pitchInterval = (float)(speedLineY2 - speedLineY1) / (totalLines - 1);
-
-            // Calculate the middle of the speed indicator
-            int middleY = (speedLineY1 + speedLineY2) / 2;
-
-            // Draw the background of the speed indicator
-            g.FillRectangle(Brushes.Gray, speedLineX1 - 12, speedLineY1, 24, speedLineY2 - speedLineY1);
-
-
-            // Define a scaling factor for pointer movement
-            float pointerScale = 0.1f; // Adjust as needed for desired speed
-
-            // Calculate the pointer position
-            int pointerY = (int)(speedLineY2 - speedValue * (speedLineY2 - speedLineY1) / 100 * pointerScale);
-            if (pointerY <= 150)
-            {
-                g.FillPolygon(Brushes.Red, new Point[] { new Point(speedLineX1 - 5, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
-
-            }
-            else
-            {
-                g.FillPolygon(Brushes.Green, new Point[] { new Point(speedLineX1 - 5, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
-            }
-
-            // Draw the speed text
-            SizeF speedTextSize = g.MeasureString(speedText, font);
-            g.DrawString(speedText, font, brush, speedLineX1 - speedTextSize.Width - 20, middleY - speedTextSize.Height / 2);
-
-            // Draw pitch indications
-            for (int i = 0; i < totalLines; i++)
-            {
-                int pitchY = speedLineY1 + (int)(i * pitchInterval);
-                g.DrawLine(Pens.White, speedLineX1 - 10, pitchY, speedLineX1 + 10, pitchY);
-            }
-        }
-
-
-
         #endregion
 
         #region mapcontrol
         private void InitializeGMap()
         {
             // Set the map provider (you can choose other providers)
-            mapcontrol.MapProvider = GMapProviders.GoogleMap;
+            mapcontrolrocket.MapProvider = GMapProviders.GoogleMap;
 
             // Set the initial position and zoom level
-            mapcontrol.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
-            mapcontrol.MinZoom = 1;
-            mapcontrol.MaxZoom = 20;
-            mapcontrol.Zoom = 12;
+            mapcontrolrocket.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
+            mapcontrolrocket.MinZoom = 1;
+            mapcontrolrocket.MaxZoom = 20;
+            mapcontrolrocket.Zoom = 12;
 
             // Add GMapControl to the form
-            mapcontrol.Overlays.Add(markerOverlay);
+            mapcontrolrocket.Overlays.Add(markerOverlay);
         }
-
-        private void ShowCurrantPosation(double lat, double lng)
-        {
-            // well set currant positions
-            currentPosationMarker.Position = new PointLatLng(lat, lng);
-
-            markerOverlay.Markers.Clear();
-            markerOverlay.Markers.Add(currentPosationMarker);
-
-
-            mapcontrol.Position = new PointLatLng(lat, lng);
-            mapcontrol.DragButton = MouseButtons.Right;
-        }
-        private void UpdateMapPosition(double latitude, double longitude)
-        {
-            // Clear existing markers and add the new marker
-            markerOverlay.Markers.Clear();
-            GMarkerGoogle positionMarker = new GMarkerGoogle(new PointLatLng(latitude, longitude), GMarkerGoogleType.arrow);
-            markerOverlay.Markers.Add(positionMarker);
-            // Set the map center to the new position
-            mapcontrol.Position = new PointLatLng(latitude, longitude);
-            mapcontrol.Zoom = 15;
-        }
-
         #endregion
 
         #region mapcontrol 2
         private void InitializeGMap2()
         {
             // Set the map provider (you can choose other providers)
-            mapcontrol2.MapProvider = GMapProviders.GoogleMap;
+            mapcontrolstaite.MapProvider = GMapProviders.GoogleMap;
 
             // Set the initial position and zoom level
-            mapcontrol2.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
-            mapcontrol2.MinZoom = 1;
-            mapcontrol2.MaxZoom = 20;
-            mapcontrol2.Zoom = 12;
+            mapcontrolstaite.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
+            mapcontrolstaite.MinZoom = 1;
+            mapcontrolstaite.MaxZoom = 20;
+            mapcontrolstaite.Zoom = 12;
 
             // Add GMapControl to the form
-            mapcontrol2.Overlays.Add(markerOverlay);
+            mapcontrolstaite.Overlays.Add(markerOverlay);
         }
-
-        private void ShowCurrantPosation2(double lat, double lng)
-        {
-            // well set currant positions
-            currentPosationMarker.Position = new PointLatLng(lat, lng);
-
-            markerOverlay.Markers.Clear();
-            markerOverlay.Markers.Add(currentPosationMarker);
-
-
-            mapcontrol2.Position = new PointLatLng(lat, lng);
-            mapcontrol2.DragButton = MouseButtons.Right;
-        }
-        private void UpdateMapPosition2(double latitude, double longitude)
-        {
-            // Clear existing markers and add the new marker
-            markerOverlay.Markers.Clear();
-            GMarkerGoogle positionMarker = new GMarkerGoogle(new PointLatLng(latitude, longitude), GMarkerGoogleType.arrow);
-            markerOverlay.Markers.Add(positionMarker);
-            // Set the map center to the new position
-            mapcontrol.Position = new PointLatLng(latitude, longitude);
-            mapcontrol.Zoom = 15;
-        }
-
         #endregion
         private void InitializeSerialPort()
         {
@@ -645,23 +235,23 @@ namespace konuralprocketGS
             label16.Text = Y;
             label17.Text = Z;
 
-            if (double.TryParse(X, out double xr))
+            //this code sends the X,Y,Z values to the gyroclass
+            if (gyroGL.parsing_gyro(X, Y, Z) == 1)
             {
-                x = xr;
+                gyroGL.X_value = x;
+                gyroGL.Y_value = y;
+                gyroGL.Z_value = z;
+            }
+            else
+            {
+                Console.WriteLine("there is something wrong in here ");
             }
 
-            if (double.TryParse(Y, out double yr))
-            {
-                y = yr;
-            }
-
-            if (double.TryParse(Z, out double zr))
-            {
-                z = zr;
-            }
 
             // Trigger a repaint of the OpenGL control on a separate thread
             Task.Run(() => glControl1.Invalidate());
+
+            //this code put X,Y,Z values in selicted parts of the datagridview
             int rowIndex = dataGridView1.Rows.Add();
             dataGridView1.Rows[rowIndex].Cells["Column18"].Value = X;
             dataGridView1.Rows[rowIndex].Cells["Column19"].Value = Y;
@@ -698,13 +288,13 @@ namespace konuralprocketGS
                     txtlat.Text = lat1.ToString();
                     txtlong.Text = lng1.ToString();
 
-                    UpdateMapPosition(lat1, lng1);
+                    map.UpdateMapPosition(lat1, lng1);
 
                     // gps controll 2 for the second map update it when its necessary
                     label39.Text = lat1.ToString();
                     label7.Text = lng1.ToString();
 
-                    UpdateMapPosition2(lat1, lng1);
+                    map.UpdateMapPosition2(lat1, lng1);
 
                     int rowIndex = dataGridView1.Rows.Add();
                     dataGridView1.Rows[rowIndex].Cells["Column15"].Value = lat1;
