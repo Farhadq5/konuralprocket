@@ -334,27 +334,11 @@ namespace konuralprocketGS
             int altitudeLineY2 = glControl1.Height - 20; // Y-coordinate of the line end
 
             // Draw the background of the altitude indicator
-            g.FillRectangle(Brushes.White, altitudeLineX1 - 2, altitudeLineY1, 2, altitudeLineY2 - altitudeLineY1);
+            g.FillRectangle(Brushes.Gray, altitudeLineX1 - 2, altitudeLineY1, 2, altitudeLineY2 - altitudeLineY1);
 
             // Draw the altitude scale
             int scaleIncrement = altitudeValue <= 1000 ? 20 : 100; // Change the scale based on altitude
-                                                                   //int maxAltitude = altitudeValue + 100; // Display 100 units above the current altitude
-                                                                   //int minAltitude = altitudeValue - 100; // Display 100 units below the current altitude
-
-            //for (int i = minAltitude; i <= maxAltitude; i += scaleIncrement)
-            //{
-            //    int y = altitudeLineY2 - i * (altitudeLineY2 - altitudeLineY1) / maxAltitude;
-
-            //    if (i >= minAltitude && i <= maxAltitude)
-            //    {
-            //        if (i != altitudeValue) // Exclude the current altitude from moving
-            //        {
-            //            int x = altitudeLineX1 + 20; // X-coordinate for drawing text
-            //            int textY = y - 7; // Y-coordinate for drawing text
-            //            g.DrawString(i.ToString(), smallFont, smallBrush, x, textY); // Display other altitudes in a smaller font
-            //        }
-            //    }
-            //}
+                                                                  
 
             List<(int Altitude, float Y)> pitchLines = new List<(int, float)>();
 
@@ -460,42 +444,51 @@ namespace konuralprocketGS
             Font font = new Font("Arial", 9);
             Brush brush = Brushes.White;
 
-            // Define the line coordinates for the altitude indicator
+            // Define the line coordinates for the speed indicator
             int speedLineX1 = 280; // X-coordinate of the line start
-            int speedLineX2 = 280; // X-coordinate of the line end
-            int speedLineY1 = 20; // Y-coordinate of the line start
-            int speedLineY2 = glControl1.Height - 20; // Y-coordinate of the line end
+            int speedLineY1 = 30; // Y-coordinate of the line start
+            int speedLineY2 = glControl1.Height - 30; // Y-coordinate of the line end
 
-            // Draw the background of the altitude indicator
-            g.FillRectangle(Brushes.White, speedLineX1 - 2, speedLineY1, 2, speedLineY2 - speedLineY1);
+            // Calculate the number of lines to be drawn
+            int totalLines = 11;
 
-            // Draw the altitude scale
-            for (int i = speedValue - 60; i <= speedValue + 60; i += 100)
+            // Calculate the interval between each pitch line
+            float pitchInterval = (float)(speedLineY2 - speedLineY1) / (totalLines - 1);
+
+            // Calculate the middle of the speed indicator
+            int middleY = (speedLineY1 + speedLineY2) / 2;
+
+            // Draw the background of the speed indicator
+            g.FillRectangle(Brushes.Gray, speedLineX1 - 12, speedLineY1, 24, speedLineY2 - speedLineY1);
+
+
+            // Define a scaling factor for pointer movement
+            float pointerScale = 0.1f; // Adjust as needed for desired speed
+
+            // Calculate the pointer position
+            int pointerY = (int)(speedLineY2 - speedValue * (speedLineY2 - speedLineY1) / 100 * pointerScale);
+            if (pointerY <= 150)
             {
-                int y = speedLineY2 - i * (speedLineY2 - speedLineY1) / 100;
-                g.DrawLine(Pens.White, speedLineX1, y, speedLineX1 + 10, y);
-                g.DrawString(i.ToString(), font, brush, speedLineX1 + 15, y - font.Height / 2);
+                g.FillPolygon(Brushes.Red, new Point[] { new Point(speedLineX1 - 5, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
+
+            }
+            else
+            {
+                g.FillPolygon(Brushes.Green, new Point[] { new Point(speedLineX1 - 5, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
             }
 
-            // Draw horizon line
-            int horizonY = speedLineY2 - 50 * (speedLineY2 - speedLineY1) / 100;
-            g.DrawLine(Pens.White, speedLineX1 - 15, horizonY, speedLineX1 + 15, horizonY);
+            // Draw the speed text
+            SizeF speedTextSize = g.MeasureString(speedText, font);
+            g.DrawString(speedText, font, brush, speedLineX1 - speedTextSize.Width - 20, middleY - speedTextSize.Height / 2);
 
             // Draw pitch indications
-            for (int i = -30; i <= 30; i += 10)
+            for (int i = 0; i < totalLines; i++)
             {
-                int pitchY = speedLineY2 - (50 + i) * (speedLineY2 - speedLineY1) / 100;
+                int pitchY = speedLineY1 + (int)(i * pitchInterval);
                 g.DrawLine(Pens.White, speedLineX1 - 10, pitchY, speedLineX1 + 10, pitchY);
             }
-
-            // Draw dynamic altitude pointer
-            int pointerY = speedLineY2 - speedValue * (speedLineY2 - speedLineY1) / 100;
-            g.FillPolygon(Brushes.White, new Point[] { new Point(speedLineX1 - 5, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
-
-            // Draw altitude text
-            SizeF altitudeTextSize = g.MeasureString(speedText, font);
-            g.DrawString(speedText, font, brush, speedLineX1 + 20, speedLineY2 - altitudeTextSize.Height - 5);
         }
+
 
 
         #endregion
@@ -840,13 +833,13 @@ namespace konuralprocketGS
 
         private void button13_Click(object sender, EventArgs e)
         {
-            if (int.TryParse(label47.Text, out int altitudeValue))
+            if (int.TryParse(label44.Text, out int altitudeValue))
             {
                 // Increment the altitude value by 20
                 altitudeValue += 25;
 
                 // Update label47 with the new altitude value
-                label47.Text = altitudeValue.ToString();
+                label44.Text = altitudeValue.ToString();
 
                 // Trigger the paint event to redraw the altitude indicator with the updated altitude value
                 glControl1.Invalidate();
@@ -860,13 +853,13 @@ namespace konuralprocketGS
 
         private void button5_Click(object sender, EventArgs e)
         {
-            if (int.TryParse(label47.Text, out int altitudeValue))
+            if (int.TryParse(label44.Text, out int altitudeValue))
             {
                 // Increment the altitude value by 20
                 altitudeValue -= 20;
 
                 // Update label47 with the new altitude value
-                label47.Text = altitudeValue.ToString();
+                label44.Text = altitudeValue.ToString();
 
                 // Trigger the paint event to redraw the altitude indicator with the updated altitude value
                 glControl1.Invalidate();
