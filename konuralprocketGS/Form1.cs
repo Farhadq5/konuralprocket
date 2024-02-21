@@ -91,16 +91,14 @@ namespace konuralprocketGS
             string speed = label47.Text;
             int speedvalue = int.Parse(speed);
 
-
-            float step = 1.0f;
-            float topla = step;
-            float radius = 4.0f;
-
+            // Clear the buffer
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            // Set up perspective and look-at matrices
             Matrix4 perspective = Matrix4.CreatePerspectiveFieldOfView(1.2f, glControl1.Width / (float)glControl1.Height, 1, 10000);
             Matrix4 lookat = Matrix4.LookAt(25 * zoomFactor, 0, 0, 0, 0, 0, 0, 1, 0);
 
+            // Load matrices
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
             GL.LoadMatrix(ref perspective);
@@ -113,17 +111,22 @@ namespace konuralprocketGS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
 
+            // Draw background colors
+            gyroGL.DrawBackground();
+
+            // Rotate based on gyro values
             GL.Rotate(x, 1.0, 0.0, 0.0);
             GL.Rotate(z, 0.0, 1.0, 0.0);
             GL.Rotate(y, 0.0, 0.0, 1.0);
 
-
-
-            gyroGL.DrawRocketComponents(step, topla, radius);
-
+            // Draw rocket components and coordinate axes
+            gyroGL.DrawRocketComponents(1.0f, 1.0f, 4.0f);
             gyroGL.DrawCoordinateAxes();
+
+            // Swap buffers
             glControl1.SwapBuffers();
 
+            // Draw speed and altitude indicators
             gyroGL.DrawSpeedIndicator(e.Graphics, speed, speedvalue);
             gyroGL.DrawAltitudeIndicator(e.Graphics, altitude, altitudeValue);
 
@@ -431,9 +434,21 @@ namespace konuralprocketGS
                 // Update label47 with the new altitude value
                 label44.Text = altitudeValue.ToString();
 
-                // Trigger the paint event to redraw the altitude indicator with the updated altitude value
-                glControl1.Invalidate();
+                
             }
+
+            if (int.TryParse(label47.Text, out int speed))
+            {
+                // Increment the altitude value by 20
+                speed += 1;
+
+                // Update label47 with the new altitude value
+                label47.Text = speed.ToString();
+
+               
+            }
+            // Trigger the paint event to redraw the altitude indicator with the updated altitude value
+            glControl1.Invalidate();
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -451,9 +466,21 @@ namespace konuralprocketGS
                 // Update label47 with the new altitude value
                 label44.Text = altitudeValue.ToString();
 
-                // Trigger the paint event to redraw the altitude indicator with the updated altitude value
-                glControl1.Invalidate();
+                
             }
+
+            if (int.TryParse(label47.Text, out int speed))
+            {
+                // Increment the altitude value by 20
+                speed -= 20;
+
+                // Update label47 with the new altitude value
+                label47.Text = altitudeValue.ToString();
+
+                
+            }
+            // Trigger the paint event to redraw the altitude indicator with the updated altitude value
+            glControl1.Invalidate();
         }
 
         // this button get the values from datagridview to exel file
