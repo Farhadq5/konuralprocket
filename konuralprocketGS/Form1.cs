@@ -5,11 +5,13 @@ using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -84,12 +86,24 @@ namespace konuralprocketGS
             }
         }
         #region opengl
+        // Variables to track mouse movement and rotation
+        bool isRightMouseButtonDown = false;
+        Point lastMousePosition;
+        float rotationX = 0.0f;
+        float rotationY = 0.0f;
+        float rotationZ = 0.0f;
+
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-            string altitude = label44.Text;
-            int altitudeValue = int.Parse(altitude);
-            string speed = label47.Text;
-            int speedvalue = int.Parse(speed);
+          string altitudeText = label47.Text;
+            double altitudeValue = 0;
+            double.TryParse(altitudeText, out altitudeValue);
+            int altitudevalue =(int) Math.Round(altitudeValue);
+            
+            string speedtext = label44.Text;
+            double speedValue = 0;
+            double.TryParse(speedtext, out speedValue);
+            int speedvalue =(int) Math.Round(speedValue);
 
             // Clear the buffer
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -111,6 +125,11 @@ namespace konuralprocketGS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
 
+            // Rotate based on mouse movement
+            GL.Rotate(rotationX, 1.0, 0.0, 0.0);
+            GL.Rotate(rotationY, 0.0, 1.0, 0.0);
+            GL.Rotate(rotationZ, 0.0, 0.0, 1.0);
+
             // Draw background colors
             gyroGL.DrawBackground();
 
@@ -126,12 +145,71 @@ namespace konuralprocketGS
             // Swap buffers
             glControl1.SwapBuffers();
 
+           
             // Draw speed and altitude indicators
-            gyroGL.DrawSpeedIndicator(e.Graphics, speed, speedvalue);
-            gyroGL.DrawAltitudeIndicator(e.Graphics, altitude, altitudeValue);
+            gyroGL.DrawSpeedIndicator(e.Graphics, speedtext, speedvalue);
+            gyroGL.DrawAltitudeIndicator(e.Graphics, altitudeText, altitudevalue);
+               
 
             GL.End();
         }
+        private void glControl1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            // You can adjust the zoom sensitivity by changing the value in the next line
+            float zoomSensitivity = 0.01f;
+
+            // Update the zoom factor based on the mouse wheel delta
+            zoomFactor += e.Delta * zoomSensitivity;
+
+            // Ensure the zoom factor is within a reasonable range
+            zoomFactor = Math.Max(zoomFactor, 0.8f);
+            zoomFactor = Math.Min(zoomFactor, 3.0f);
+
+            // Redraw the OpenGL control
+            glControl1.Invalidate();
+        }
+
+        // Mouse down event handler
+        private void glControl1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                isRightMouseButtonDown = true;
+                lastMousePosition = e.Location;
+            }
+        }
+
+        // Mouse move event handler
+        private void glControl1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isRightMouseButtonDown)
+            {
+                // Calculate rotation based on mouse movement
+                int deltaX = e.X - lastMousePosition.X;
+                int deltaY = e.Y - lastMousePosition.Y;
+
+                // Update rotation angles based on mouse movement
+                rotationX += deltaY;
+                rotationY += deltaX;
+
+                // Remember current mouse position
+                lastMousePosition = e.Location;
+
+                // Redraw the OpenGL control
+                glControl1.Invalidate();
+            }
+        }
+
+        // Mouse up event handler
+        private void glControl1_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                isRightMouseButtonDown = false;
+            }
+        }
+
+
         #endregion
 
         #region mapcontrol
@@ -189,24 +267,29 @@ namespace konuralprocketGS
 
         private async Task<string> ReadLineAsync(Stream stream)
         {
-            byte[] buffer = new byte[1024];
-            int bytesRead = 0;
-            char lastchar = '\0';
+            byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
+            StringBuilder line = new StringBuilder();
 
             while (true)
             {
-                bytesRead += await stream.ReadAsync(buffer, bytesRead, 1);
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
 
-                if (bytesRead > 0)
+                if (bytesRead == 0)
                 {
-                    char currentCahr = (char)buffer[bytesRead - 1];
+                    // Disconnection detected
+                    return null; // Or throw an exception if disconnection should be treated as an error
+                    
+                }
 
-                    if (currentCahr == '\n' && lastchar == '\r')
-                    {
-                        //return a newline character return the compleat line
-                        return Encoding.ASCII.GetString(buffer, 0, bytesRead - 2);
-                    }
-                    lastchar = currentCahr;
+                string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                line.Append(data);
+
+                int newlineIndex;
+                while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
+                {
+                    string lineStr = line.ToString(0, newlineIndex);
+                    line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
+                    return lineStr;
                 }
             }
         }
@@ -219,11 +302,11 @@ namespace konuralprocketGS
             // Split the data using the ',' delimiter
             string[] values = data.Split(',');
 
-            if (values.Length >= 8) // Check if there are at least 5 elements in the array
+            if (values.Length >= 6) // Check if there are at least 5 elements in the array
             {
                 updategyro(values[0], values[1], values[2]);
                 updatebmp(values[3], values[4], values[5]);
-                gps(values[6], values[7]);
+               // gps(values[6], values[7]);
             }
 
         }
@@ -238,17 +321,14 @@ namespace konuralprocketGS
             label16.Text = Y;
             label17.Text = Z;
 
-            //this code sends the X,Y,Z values to the gyroclass
-            if (gyroGL.parsing_gyro(X, Y, Z) == 1)
-            {
-                gyroGL.X_value = x;
-                gyroGL.Y_value = y;
-                gyroGL.Z_value = z;
-            }
-            else
-            {
-                Console.WriteLine("there is something wrong in here ");
-            }
+
+            double.TryParse(X, out double a);
+            x = a;
+            double.TryParse(Y, out double b);
+            y = b;
+            double.TryParse(Z, out double c);
+            z = c;
+
 
 
             // Trigger a repaint of the OpenGL control on a separate thread
@@ -262,15 +342,15 @@ namespace konuralprocketGS
         }
 
         // tempreture and pressure controll
-        private void updatebmp(string temp, string pressure, string altitude)
+        private void updatebmp(string tempreture,string pressure,string altitude)
         {
-            label43.Text = temp;
+            label43.Text = tempreture;
             label41.Text = pressure;
             label47.Text = altitude;
 
-
+            Task.Run(() => glControl1.Invalidate());
             int rowIndex = dataGridView1.Rows.Add();
-            dataGridView1.Rows[rowIndex].Cells["Column13"].Value = temp;
+            dataGridView1.Rows[rowIndex].Cells["Column13"].Value = tempreture;
             dataGridView1.Rows[rowIndex].Cells["Column6"].Value = pressure;
             dataGridView1.Rows[rowIndex].Cells["Column8"].Value = altitude;
             dataGridView1.Rows[rowIndex].Cells["Column10"].Value = altitude;
@@ -426,29 +506,30 @@ namespace konuralprocketGS
 
         private void button13_Click(object sender, EventArgs e)
         {
-            if (int.TryParse(label44.Text, out int altitudeValue))
-            {
-                // Increment the altitude value by 20
-                altitudeValue += 25;
+            temizle1();
+            //if (int.TryParse(label44.Text, out int altitudeValue))
+            //{
+            //    // Increment the altitude value by 20
+            //    altitudeValue += 25;
 
-                // Update label47 with the new altitude value
-                label44.Text = altitudeValue.ToString();
+            //    // Update label47 with the new altitude value
+            //    label44.Text = altitudeValue.ToString();
 
-                
-            }
 
-            if (int.TryParse(label47.Text, out int speed))
-            {
-                // Increment the altitude value by 20
-                speed += 1;
+            //}
 
-                // Update label47 with the new altitude value
-                label47.Text = speed.ToString();
+            //if (int.TryParse(label47.Text, out int speed))
+            //{
+            //    // Increment the altitude value by 20
+            //    speed += 1;
 
-               
-            }
-            // Trigger the paint event to redraw the altitude indicator with the updated altitude value
-            glControl1.Invalidate();
+            //    // Update label47 with the new altitude value
+            //    label47.Text = speed.ToString();
+
+
+            //}
+            //// Trigger the paint event to redraw the altitude indicator with the updated altitude value
+            //glControl1.Invalidate();
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -458,29 +539,29 @@ namespace konuralprocketGS
 
         private void button5_Click(object sender, EventArgs e)
         {
-            if (int.TryParse(label44.Text, out int altitudeValue))
-            {
-                // Increment the altitude value by 20
-                altitudeValue -= 20;
+            //if (int.TryParse(label44.Text, out int altitudeValue))
+            //{
+            //    // Increment the altitude value by 20
+            //    altitudeValue -= 20;
 
-                // Update label47 with the new altitude value
-                label44.Text = altitudeValue.ToString();
-
-                
-            }
-
-            if (int.TryParse(label47.Text, out int speed))
-            {
-                // Increment the altitude value by 20
-                speed -= 20;
-
-                // Update label47 with the new altitude value
-                label47.Text = altitudeValue.ToString();
+            //    // Update label47 with the new altitude value
+            //    label44.Text = altitudeValue.ToString();
 
                 
-            }
-            // Trigger the paint event to redraw the altitude indicator with the updated altitude value
-            glControl1.Invalidate();
+            //}
+
+            //if (int.TryParse(label47.Text, out int speed))
+            //{
+            //    // Increment the altitude value by 20
+            //    speed -= 20;
+
+            //    // Update label47 with the new altitude value
+            //    label47.Text = altitudeValue.ToString();
+
+                
+            //}
+            //// Trigger the paint event to redraw the altitude indicator with the updated altitude value
+            //glControl1.Invalidate();
         }
 
         // this button get the values from datagridview to exel file
@@ -579,6 +660,12 @@ namespace konuralprocketGS
             }
 
         }
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+
+        }
+
         private void temizle1()
         {
             label41.Text = "0";

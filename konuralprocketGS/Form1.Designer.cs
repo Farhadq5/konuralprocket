@@ -321,11 +321,12 @@
             this.glControl1.Location = new System.Drawing.Point(2, 13);
             this.glControl1.Margin = new System.Windows.Forms.Padding(4);
             this.glControl1.Name = "glControl1";
-            this.glControl1.Size = new System.Drawing.Size(318, 206);
+            this.glControl1.Size = new System.Drawing.Size(318, 224);
             this.glControl1.TabIndex = 5;
             this.glControl1.VSync = false;
             this.glControl1.Load += new System.EventHandler(this.glControl1_Load);
             this.glControl1.Paint += new System.Windows.Forms.PaintEventHandler(this.glControl1_Paint);
+            this.glControl1.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glControl1_MouseWheel);
             // 
             // button9
             // 
@@ -520,6 +521,7 @@
             this.button12.TabIndex = 32;
             this.button12.Text = "Text";
             this.button12.UseVisualStyleBackColor = false;
+            this.button12.Click += new System.EventHandler(this.button12_Click);
             // 
             // label24
             // 

@@ -19,46 +19,13 @@ namespace konuralprocketGS
 
        
         public double x = 0.0f, y = 0.0f, z = 0.0f;
-        bool by = false, bx = false, bz = false;
+       // bool by = false, bx = false, bz = false;
         private float zoomFactor = 1.0f;
         Color renk1 = Color.White, renk2 = Color.Red;
-
-
-        public double X_value { get; set; }
-
-        public double Y_value { get; set; }
-
-        public double Z_value { get; set; }
 
         public string speed { get; set; }
 
         public string altitude { get; set; }
-
-        public int parsing_gyro(string X, string Y, string Z)
-        {
-            if (X != null && Y != null && Z != null)
-            {
-
-
-                if (double.TryParse(X, out double xr))
-                {
-                    X_value = xr;
-                }
-
-                if (double.TryParse(Y, out double yr))
-                {
-                    Y_value = yr;
-                }
-
-                if (double.TryParse(Z, out double zr))
-                {
-                    Z_value = zr;
-                }
-
-                return 1;
-            }
-            else { return 0; }
-        }
 
 
         public void DrawRocketComponents(float step, float topla, float radius)
@@ -111,21 +78,7 @@ namespace konuralprocketGS
             GL.Clear(ClearBufferMask.ColorBufferBit);
             GL.Disable(EnableCap.ScissorTest);
         }
-        public void glControl1_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            // You can adjust the zoom sensitivity by changing the value in the next line
-            float zoomSensitivity = 0.1f;
-
-            // Update the zoom factor based on the mouse wheel delta
-            zoomFactor += e.Delta * zoomSensitivity;
-
-            // Ensure the zoom factor is within a reasonable range
-            zoomFactor = Math.Max(zoomFactor, 0.1f);
-            zoomFactor = Math.Min(zoomFactor, 10.0f);
-
-            // Redraw the OpenGL control
-            glControl1.Invalidate();
-        }
+       
         public void renk_ataması(float step)
         {
             if (step < 45)
@@ -377,7 +330,7 @@ namespace konuralprocketGS
 
             // Draw the current altitude box
             int boxHeight = 25; // Adjust as needed
-            int boxY = 105;
+            int boxY = (altitudeLineY1 + altitudeLineY2)/2;
             int boxTopY = boxY - boxHeight / 2; // Calculate the top-left corner's y-coordinate of the box to center it vertically
 
             // Define the transparency level (alpha value)
@@ -432,7 +385,7 @@ namespace konuralprocketGS
             int middleY = (speedLineY1 + speedLineY2) / 2;
 
             // Define a scaling factor for pointer movement
-            float pointerScale = 0.326f; // Adjust as needed for desired speed
+            float pointerScale = 0.320f; // Adjust as needed for desired speed
 
             // Define the speed increment represented by each horizontal line
             //int speedIncrement = 30;
