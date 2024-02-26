@@ -86,13 +86,6 @@ namespace konuralprocketGS
             }
         }
         #region opengl
-        // Variables to track mouse movement and rotation
-        bool isRightMouseButtonDown = false;
-        Point lastMousePosition;
-        float rotationX = 0.0f;
-        float rotationY = 0.0f;
-        float rotationZ = 0.0f;
-
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
           string altitudeText = label47.Text;
@@ -125,11 +118,6 @@ namespace konuralprocketGS
             GL.Enable(EnableCap.DepthTest);
             GL.DepthFunc(DepthFunction.Less);
 
-            // Rotate based on mouse movement
-            GL.Rotate(rotationX, 1.0, 0.0, 0.0);
-            GL.Rotate(rotationY, 0.0, 1.0, 0.0);
-            GL.Rotate(rotationZ, 0.0, 0.0, 1.0);
-
             // Draw background colors
             gyroGL.DrawBackground();
 
@@ -139,8 +127,8 @@ namespace konuralprocketGS
             GL.Rotate(y, 0.0, 0.0, 1.0);
 
             // Draw rocket components and coordinate axes
-            gyroGL.DrawRocketComponents(1.0f, 1.0f, 4.0f);
-            gyroGL.DrawCoordinateAxes();
+            gyroGL.DrawRocketComponents(0.01f, 0.01f, 3.1f);
+           // gyroGL.DrawCoordinateAxes();
 
             // Swap buffers
             glControl1.SwapBuffers();
@@ -168,47 +156,6 @@ namespace konuralprocketGS
             // Redraw the OpenGL control
             glControl1.Invalidate();
         }
-
-        // Mouse down event handler
-        private void glControl1_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                isRightMouseButtonDown = true;
-                lastMousePosition = e.Location;
-            }
-        }
-
-        // Mouse move event handler
-        private void glControl1_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (isRightMouseButtonDown)
-            {
-                // Calculate rotation based on mouse movement
-                int deltaX = e.X - lastMousePosition.X;
-                int deltaY = e.Y - lastMousePosition.Y;
-
-                // Update rotation angles based on mouse movement
-                rotationX += deltaY;
-                rotationY += deltaX;
-
-                // Remember current mouse position
-                lastMousePosition = e.Location;
-
-                // Redraw the OpenGL control
-                glControl1.Invalidate();
-            }
-        }
-
-        // Mouse up event handler
-        private void glControl1_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                isRightMouseButtonDown = false;
-            }
-        }
-
 
         #endregion
 

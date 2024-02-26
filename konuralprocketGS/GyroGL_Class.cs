@@ -30,74 +30,15 @@ namespace konuralprocketGS
 
         public void DrawRocketComponents(float step, float topla, float radius)
         {
-            silindir(step, topla, radius, 3, -8);
-            koni(0.01f, 0.01f, radius, 3.0f, 3, 8);
-            koni(0.01f, 0.01f, radius, 2.0f, -7.0f, -14.0f);
-            silindir(0.01f, topla, 0.07f, 9, 3);
-            silindir(0.01f, topla, 0.2f, 9, 9.3f);
-            Pervane(9.0f, 7.0f, 0.3f, 0.3f);
-            silindir(0.01f, topla, 0.2f, 7.3f, 7f);
-            Pervane(7.0f, 7.0f, 0.3f, 0.3f);
+            silindir(step, topla, radius, 3f, -8);
+
+            koni(step, topla, radius , 0.5f, 3, 10.5f);
+            koni(step, step, radius, 2.8f, -7.0f, -12.0f);
+           
+                 
+            Pervane(-13.0f, 6.0f, 0.1f, 5.3f);
         }
 
-        public void DrawCoordinateAxes()
-        {
-            GL.Begin(PrimitiveType.Lines);
-
-            // X-axis (red)
-            GL.Color3(Color.Red);
-            GL.Vertex3(-100, 0, 0);
-            GL.Vertex3(100, 0, 0);
-
-            // Y-axis (green)
-            GL.Color3(Color.Green);
-            GL.Vertex3(0, -100, 0);
-            GL.Vertex3(0, 100, 0);
-
-            // Z-axis (blue)
-            GL.Color3(Color.Blue);
-            GL.Vertex3(0, 0, -100);
-            GL.Vertex3(0, 0, 100);
-
-
-
-            GL.End();
-
-        }
-
-        public void DrawBackground()
-        {
-            // Set the clear color to sky blue for the top half
-            GL.ClearColor(Color.SkyBlue);
-            GL.Clear(ClearBufferMask.ColorBufferBit);
-
-            // Set the clear color to saddle brown for the bottom half
-            GL.ClearColor(Color.SaddleBrown);
-            GL.Scissor(0, 0, glControl1.Width, glControl1.Height / 2);
-            GL.Enable(EnableCap.ScissorTest);
-            GL.Clear(ClearBufferMask.ColorBufferBit);
-            GL.Disable(EnableCap.ScissorTest);
-        }
-       
-        public void renk_ataması(float step)
-        {
-            if (step < 45)
-                GL.Color3(renk2);
-            else if (step < 90)
-                GL.Color3(renk1);
-            else if (step < 135)
-                GL.Color3(renk2);
-            else if (step < 180)
-                GL.Color3(renk1);
-            else if (step < 225)
-                GL.Color3(renk2);
-            else if (step < 270)
-                GL.Color3(renk1);
-            else if (step < 315)
-                GL.Color3(renk2);
-            else if (step < 360)
-                GL.Color3(renk1);
-        }
         public void silindir(float step, float topla, float radius, float dikey1, float dikey2)
         {
             float eski_step = 0.1f;
@@ -197,35 +138,127 @@ namespace konuralprocketGS
             GL.End();
         }
         public void Pervane(float yukseklik, float uzunluk, float kalinlik, float egiklik)
-        {    
+        {
             GL.Begin(PrimitiveType.Quads);
 
+            // Front face of the fin (right side)
             GL.Color3(renk2);
             GL.Vertex3(uzunluk, yukseklik, kalinlik);
             GL.Vertex3(uzunluk, yukseklik + egiklik, -kalinlik);
             GL.Vertex3(0, yukseklik + egiklik, -kalinlik);
             GL.Vertex3(0, yukseklik, kalinlik);
 
-            GL.Color3(renk2);
+            // Back face of the fin (right side)
             GL.Vertex3(-uzunluk, yukseklik + egiklik, kalinlik);
             GL.Vertex3(-uzunluk, yukseklik, -kalinlik);
             GL.Vertex3(0, yukseklik, -kalinlik);
             GL.Vertex3(0, yukseklik + egiklik, kalinlik);
 
+            // Top face of the fin with curvature
             GL.Color3(renk1);
-            GL.Vertex3(kalinlik, yukseklik, -uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik + egiklik, -uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik + egiklik, 0.0);//+
-            GL.Vertex3(kalinlik, yukseklik, 0.0);//-
+            for (float t = 0; t <= 1; t += 0.1f)
+            {
+                // Calculate control points for Bézier curve
+                float controlX1 = kalinlik * (1 - t);
+                float controlY1 = yukseklik;
+                float controlZ1 = (float)(kalinlik * Math.Sin(Math.PI * t));
 
-            GL.Color3(renk1);
+                float controlX2 = -kalinlik * (1 - t);
+                float controlY2 = yukseklik + egiklik;
+                float controlZ2 = (float)(-kalinlik * Math.Sin(Math.PI * t));
+
+                // Calculate points on the Bézier curve
+                float bezierX = (1 - t) * controlX1 + t * controlX2;
+                float bezierY = (1 - t) * controlY1 + t * controlY2;
+                float bezierZ = (1 - t) * controlZ1 + t * controlZ2;
+
+                GL.Vertex3(bezierX, bezierY, bezierZ);
+
+                // If not the last iteration, calculate the next point on the curve
+                if (t < 1)
+                {
+                    float nextBezierX = (1 - (t + 0.1f)) * controlX1 + (t + 0.1f) * controlX2;
+                    float nextBezierY = (1 - (t + 0.1f)) * controlY1 + (t + 0.1f) * controlY2;
+                    float nextBezierZ = (1 - (t + 0.1f)) * controlZ1 + (t + 0.1f) * controlZ2;
+
+                    GL.Vertex3(nextBezierX, nextBezierY, nextBezierZ);
+                }
+            }
+
+            // Bottom face of the fin
             GL.Vertex3(kalinlik, yukseklik + egiklik, +uzunluk);
             GL.Vertex3(-kalinlik, yukseklik, +uzunluk);
             GL.Vertex3(-kalinlik, yukseklik, 0.0);
             GL.Vertex3(kalinlik, yukseklik + egiklik, 0.0);
-            GL.End();
 
+            // Right face of the fin
+            GL.Vertex3(uzunluk, yukseklik, kalinlik);
+            GL.Vertex3(uzunluk, yukseklik + egiklik, -kalinlik);
+            GL.Vertex3(-uzunluk, yukseklik + egiklik, kalinlik);
+            GL.Vertex3(-uzunluk, yukseklik, -kalinlik);
+
+            GL.End();
         }
+
+        //public void DrawCoordinateAxes()
+        //{
+        //    GL.Begin(PrimitiveType.Lines);
+
+        //    // X-axis (red)
+        //    GL.Color3(Color.Red);
+        //    GL.Vertex3(-100, 0, 0);
+        //    GL.Vertex3(100, 0, 0);
+
+        //    // Y-axis (green)
+        //    GL.Color3(Color.Green);
+        //    GL.Vertex3(0, -100, 0);
+        //    GL.Vertex3(0, 100, 0);
+
+        //    // Z-axis (blue)
+        //    GL.Color3(Color.Blue);
+        //    GL.Vertex3(0, 0, -100);
+        //    GL.Vertex3(0, 0, 100);
+
+
+
+        //    GL.End();
+
+        //}
+
+        public void DrawBackground()
+        {
+            // Set the clear color to sky blue for the top half
+            GL.ClearColor(Color.SkyBlue);
+            GL.Clear(ClearBufferMask.ColorBufferBit);
+
+            // Set the clear color to saddle brown for the bottom half
+            GL.ClearColor(Color.SaddleBrown);
+            GL.Scissor(0, 0, glControl1.Width, glControl1.Height / 2);
+            GL.Enable(EnableCap.ScissorTest);
+            GL.Clear(ClearBufferMask.ColorBufferBit);
+            GL.Disable(EnableCap.ScissorTest);
+        }
+       
+        public void renk_ataması(float step)
+        {
+            if (step < 45)
+                GL.Color3(renk2);
+            else if (step < 90)
+                GL.Color3(renk1);
+            else if (step < 135)
+                GL.Color3(renk2);
+            else if (step < 180)
+                GL.Color3(renk1);
+            else if (step < 225)
+                GL.Color3(renk2);
+            else if (step < 270)
+                GL.Color3(renk1);
+            else if (step < 315)
+                GL.Color3(renk2);
+            else if (step < 360)
+                GL.Color3(renk1);
+        }       
+
         const int transparency = 150;
 
         public void DrawAltitudeIndicator(Graphics g, string altitudeText, int altitudeValue)
