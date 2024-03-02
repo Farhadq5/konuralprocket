@@ -5,13 +5,11 @@ using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
-using ScottPlot.Drawing.Colormaps;
 using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -88,15 +86,15 @@ namespace konuralprocketGS
         #region opengl
         private void glControl1_Paint(object sender, PaintEventArgs e)
         {
-          string altitudeText = label47.Text;
+            string altitudeText = label47.Text;
             double altitudeValue = 0;
             double.TryParse(altitudeText, out altitudeValue);
-            int altitudevalue =(int) Math.Round(altitudeValue);
-            
+            int altitudevalue = (int)Math.Round(altitudeValue);
+
             string speedtext = label44.Text;
             double speedValue = 0;
             double.TryParse(speedtext, out speedValue);
-            int speedvalue =(int) Math.Round(speedValue);
+            int speedvalue = (int)Math.Round(speedValue);
 
             // Clear the buffer
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -128,16 +126,15 @@ namespace konuralprocketGS
 
             // Draw rocket components and coordinate axes
             gyroGL.DrawRocketComponents(0.01f, 0.01f, 3.1f);
-           // gyroGL.DrawCoordinateAxes();
+            // gyroGL.DrawCoordinateAxes();
 
             // Swap buffers
             glControl1.SwapBuffers();
 
-           
             // Draw speed and altitude indicators
             gyroGL.DrawSpeedIndicator(e.Graphics, speedtext, speedvalue);
             gyroGL.DrawAltitudeIndicator(e.Graphics, altitudeText, altitudevalue);
-               
+
 
             GL.End();
         }
@@ -225,7 +222,7 @@ namespace konuralprocketGS
                 {
                     // Disconnection detected
                     return null; // Or throw an exception if disconnection should be treated as an error
-                    
+
                 }
 
                 string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
@@ -240,7 +237,29 @@ namespace konuralprocketGS
                 }
             }
         }
+        //private async Task<string> ReadLineAsync(Stream stream)
+        //{
+        //    byte[] buffer = new byte[1024];
+        //    int bytesRead = 0;
+        //    char lastchar = '\0';
 
+        //    while (true)
+        //    {
+        //        bytesRead += await stream.ReadAsync(buffer, bytesRead, 1);
+
+        //        if (bytesRead > 0)
+        //        {
+        //            char currentCahr = (char)buffer[bytesRead - 1];
+
+        //            if (currentCahr == '\n' && lastchar == '\r')
+        //            {
+        //                //return a newline character return the compleat line
+        //                return Encoding.ASCII.GetString(buffer, 0, bytesRead - 2);
+        //            }
+        //            lastchar = currentCahr;
+        //        }
+        //    }
+        //}
 
         private void parsedata(string data)
         {
@@ -253,7 +272,7 @@ namespace konuralprocketGS
             {
                 updategyro(values[0], values[1], values[2]);
                 updatebmp(values[3], values[4], values[5]);
-               // gps(values[6], values[7]);
+                // gps(values[6], values[7]);
             }
 
         }
@@ -264,9 +283,9 @@ namespace konuralprocketGS
             label45.Text = X;
             label49.Text = Y;
             label50.Text = Z;
-            label15.Text = X;
-            label16.Text = Y;
-            label17.Text = Z;
+            //label15.Text = X;
+            //label16.Text = Y;
+            //label17.Text = Z;
 
 
             double.TryParse(X, out double a);
@@ -289,7 +308,7 @@ namespace konuralprocketGS
         }
 
         // tempreture and pressure controll
-        private void updatebmp(string tempreture,string pressure,string altitude)
+        private void updatebmp(string tempreture, string pressure, string altitude)
         {
             label43.Text = tempreture;
             label41.Text = pressure;
@@ -315,8 +334,8 @@ namespace konuralprocketGS
                 // Check if both latitude and longitude are not zero
                 if (lat1 != 0.0 || lng1 != 0.0)
                 {
-                    txtlat.Text = lat1.ToString();
-                    txtlong.Text = lng1.ToString();
+                   // txtlat.Text = lat1.ToString();
+                    //txtlong.Text = lng1.ToString();
 
                     map.UpdateMapPosition(lat1, lng1);
 
@@ -484,35 +503,61 @@ namespace konuralprocketGS
 
         }
 
-        private void button5_Click(object sender, EventArgs e)
+      
+
+
+        private void glControl1_Load(object sender, EventArgs e)
         {
-            //if (int.TryParse(label44.Text, out int altitudeValue))
-            //{
-            //    // Increment the altitude value by 20
-            //    altitudeValue -= 20;
+            //GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            //GL.Enable(EnableCap.DepthTest);
+        }
 
-            //    // Update label47 with the new altitude value
-            //    label44.Text = altitudeValue.ToString();
 
-                
-            //}
+        // this button get the values from datagridview to text file
+        private void button12_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Choose a location to save the text file
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+                saveFileDialog.Filter = "text Files|*.txt";
+                saveFileDialog.Title = "Save Data as text  File";
 
-            //if (int.TryParse(label47.Text, out int speed))
-            //{
-            //    // Increment the altitude value by 20
-            //    speed -= 20;
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Open the file stream for writing
+                    using (StreamWriter sw = new StreamWriter(saveFileDialog.FileName))
+                    {
+                        // Write the header
+                        foreach (DataGridViewColumn column in dataGridView1.Columns)
+                        {
+                            sw.Write(column.HeaderText + "\t");
+                        }
+                        sw.WriteLine();
 
-            //    // Update label47 with the new altitude value
-            //    label47.Text = altitudeValue.ToString();
+                        // Write each row
+                        foreach (DataGridViewRow row in dataGridView1.Rows)
+                        {
+                            foreach (DataGridViewCell cell in row.Cells)
+                            {
+                                sw.Write(cell.Value + "\t");
+                            }
+                            sw.WriteLine();
+                        }
+                    }
 
-                
-            //}
-            //// Trigger the paint event to redraw the altitude indicator with the updated altitude value
-            //glControl1.Invalidate();
+                    MessageBox.Show("Data exported to " + saveFileDialog.FileName, "Export Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error exporting data: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
         }
 
         // this button get the values from datagridview to exel file
-        private void button6_Click_1(object sender, EventArgs e)
+        private void button14_Click(object sender, EventArgs e)
         {
             try
             {
@@ -557,60 +602,31 @@ namespace konuralprocketGS
 
         }
 
-
-        private void glControl1_Load(object sender, EventArgs e)
+        private void button5_Click_1(object sender, EventArgs e)
         {
-            //GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            //GL.Enable(EnableCap.DepthTest);
-        }
-
-
-        // this button get the values from datagridview to text file
-        private void button15_Click_1(object sender, EventArgs e)
-        {
-            try
+            if (int.TryParse(label44.Text, out int altitudeValue))
             {
-                // Choose a location to save the text file
-                SaveFileDialog saveFileDialog = new SaveFileDialog();
-                saveFileDialog.Filter = "text Files|*.txt";
-                saveFileDialog.Title = "Save Data as text  File";
+                // Increment the altitude value by 20
+                altitudeValue += 1;
 
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    // Open the file stream for writing
-                    using (StreamWriter sw = new StreamWriter(saveFileDialog.FileName))
-                    {
-                        // Write the header
-                        foreach (DataGridViewColumn column in dataGridView1.Columns)
-                        {
-                            sw.Write(column.HeaderText + "\t");
-                        }
-                        sw.WriteLine();
+                // Update label47 with the new altitude value
+                label44.Text = altitudeValue.ToString();
 
-                        // Write each row
-                        foreach (DataGridViewRow row in dataGridView1.Rows)
-                        {
-                            foreach (DataGridViewCell cell in row.Cells)
-                            {
-                                sw.Write(cell.Value + "\t");
-                            }
-                            sw.WriteLine();
-                        }
-                    }
 
-                    MessageBox.Show("Data exported to " + saveFileDialog.FileName, "Export Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error exporting data: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-        }
+            if (int.TryParse(label47.Text, out int speed))
+            {
+                // Increment the altitude value by 20
+                speed += 20;
 
-        private void button12_Click(object sender, EventArgs e)
-        {
+                // Update label47 with the new altitude value
+                label47.Text = altitudeValue.ToString();
 
+
+            }
+            // Trigger the paint event to redraw the altitude indicator with the updated altitude value
+            glControl1.Invalidate();
         }
 
         private void temizle1()

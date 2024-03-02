@@ -37,6 +37,8 @@ namespace konuralprocketGS
            
                  
             Pervane(-13.0f, 6.0f, 0.1f, 5.3f);
+
+
         }
 
         public void silindir(float step, float topla, float radius, float dikey1, float dikey2)
@@ -257,9 +259,16 @@ namespace konuralprocketGS
                 GL.Color3(renk2);
             else if (step < 360)
                 GL.Color3(renk1);
-        }       
+        }
+
+        // Define font and brush for drawing the text
+        Font largeFont = new Font("Arial", 12, FontStyle.Bold);
+        Font font = new Font("Arial", 9);
+        Brush largeBrush = Brushes.White;
+        Brush smallBrush = Brushes.Gray;
 
         const int transparency = 150;
+        int totalLines = 11;
 
         public void DrawAltitudeIndicator(Graphics g, string altitudeText, int altitudeValue)
         {
@@ -383,21 +392,19 @@ namespace konuralprocketGS
 
             GL.End();
         }
-        
-        public void DrawSpeedIndicator(Graphics g, string speedText, int speedValue)
+
+        #region speedIndecator
+
+        int scaleIncrement = 30;    
+        public void Drawspeedhorozontal(Graphics g)
         {
-            // Define font and brush for drawing the text
-            Font largeFont = new Font("Arial", 12, FontStyle.Bold);
-            Font font = new Font("Arial", 9);
-            Brush largeBrush = Brushes.White;
-            Brush smallBrush = Brushes.Gray;
-
             // Define the line coordinates for the speed indicator
-            int speedLineX1 = 302; // X-coordinate of the line start
+            int speedLineX1 = 336; // X-coordinate of the line start
             int speedLineY1 = 10; // Y-coordinate of the line start
-            int speedLineY2 = glControl1.Height - 10; // Y-coordinate of the line end  
 
-            //int transparency = 150; // Adjust the transparency level as needed (0 for fully transparent, 255 for fully opaque)
+            int speedLineY2 = glControl1.Height - 10; // Y-coordinate of the line end  
+            
+            float pitchInterval = (float)(speedLineY2 - speedLineY1) / (totalLines - 1);          
 
             // Create a transparent color for horozontal line indecators
             Color transparenthorozontal = Color.FromArgb(transparency, Color.Black);
@@ -406,10 +413,25 @@ namespace konuralprocketGS
             g.FillRectangle(new SolidBrush(transparenthorozontal), speedLineX1 - 15, speedLineY1, 30, speedLineY2 + 8 - speedLineY1);
 
             // Draw the speed scale and text
-            int scaleIncrement = 30; // Each horizontal line represents a value difference of 30
+            for (int i = 0; i < totalLines; i++)
+            {
+                int pitchY = speedLineY2 - (int)(i * pitchInterval);
+                g.DrawLine(Pens.White, speedLineX1 - 10, pitchY, speedLineX1 + 10, pitchY);
 
-            // Calculate the number of lines to be drawn
-            int totalLines = 11; // Total number of lines
+                // Draw the value of each horizontal line
+                g.DrawString((i * scaleIncrement).ToString(), font, Brushes.Gray, speedLineX1 - 43, pitchY - font.Height / 2);
+            }
+        }
+
+        public void DrawSpeedIndicator(Graphics g, string speedText, int speedValue)
+        {
+            // Define the line coordinates for the speed indicator
+            int speedLineX1 = 336; // X-coordinate of the line start
+            int speedLineY1 = 10; // Y-coordinate of the line start
+
+            int speedLineY2 = glControl1.Height - 10; // Y-coordinate of the line end  
+
+            //int transparency = 150; // Adjust the transparency level as needed (0 for fully transparent, 255 for fully opaque)
 
             // Calculate the interval between each pitch line
             float pitchInterval = (float)(speedLineY2 - speedLineY1) / (totalLines - 1);
@@ -417,11 +439,11 @@ namespace konuralprocketGS
             // Calculate the middle of the speed indicator
             int middleY = (speedLineY1 + speedLineY2) / 2;
 
-            // Define a scaling factor for pointer movement
-            float pointerScale = 0.320f; // Adjust as needed for desired speed
+            // Draw horizontal lines and their values
+            Drawspeedhorozontal(g);
 
-            // Define the speed increment represented by each horizontal line
-            //int speedIncrement = 30;
+            // Define a scaling factor for pointer movement
+            float pointerScale = 0.330f; // Adjust as needed for desired speed
 
             // Calculate the pointer position
             int pointerY = (int)(speedLineY2 - speedValue * (speedLineY2 - speedLineY1) / 100 * pointerScale);
@@ -436,50 +458,40 @@ namespace konuralprocketGS
                 pointerY = speedLineY2; // Set pointer to the position of the last horizontal line
             }
 
-
             // Draw the speed indicator line and pointer
             if (pointerY <= speedLineY2 && pointerY >= speedLineY1)
             {
-
-                    if (speedValue >= 200)
-                    {
-                        g.FillPolygon(Brushes.Red, new Point[] { new Point(speedLineX1 - 9, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
-                    }
-                    else
-                    {
-                        g.FillPolygon(Brushes.Green, new Point[] { new Point(speedLineX1 - 9, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
-                    }
-
+                if (speedValue >= 200)
+                {
+                    g.FillPolygon(Brushes.Red, new Point[] { new Point(speedLineX1 - 9, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
+                }
+                else
+                {
+                    g.FillPolygon(Brushes.Green, new Point[] { new Point(speedLineX1 - 9, pointerY), new Point(speedLineX1 - 15, pointerY + 5), new Point(speedLineX1 - 15, pointerY - 5) });
+                }
             }
 
             // Draw the speed text
             SizeF speedTextSize = g.MeasureString(speedText, font);
             g.DrawString(speedText, font, smallBrush, speedLineX1 - speedTextSize.Width - 20, middleY - speedTextSize.Height / 2);
 
-            // Draw pitch indications and their values
-            for (int i = 0; i < totalLines; i++)
-            {
-                int pitchY = speedLineY2 - (int)(i * pitchInterval);
-                g.DrawLine(Pens.White, speedLineX1 - 10, pitchY, speedLineX1 + 10, pitchY);
-
-                // Draw the value of each horizontal line
-                g.DrawString((i * scaleIncrement).ToString(), font, Brushes.Gray, speedLineX1 - 43, pitchY - font.Height / 2);
-            }
-
             // Draw the current speed box
             int boxHeight = 25; // Adjust as needed
             int boxY = (speedLineY1 + speedLineY2) / 2; // Set the Y-coordinate to the middle of the speed indicator
             int boxTopY = boxY - boxHeight / 2; // Calculate the top-left corner's y-coordinate of the box to center it vertically
 
-            // Create a transparent color for horozontal line indecators
+            // Create a transparent color for horizontal line indicators
             Color Transparentbox = Color.FromArgb(transparency, Color.Black);
 
             // Draw the current speed box with transparency
             g.FillRectangle(new SolidBrush(Transparentbox), speedLineX1 - 75, boxTopY, 60, boxHeight);
 
-            // Draw the speed value inside the box
+            // Draw the initial speed value inside the box
             int boxTextY = boxTopY + (boxHeight - largeFont.Height) / 2; // Y-coordinate for drawing text inside the box
             g.DrawString(speedValue.ToString(), largeFont, largeBrush, speedLineX1 - 70, boxTextY);
+
         }
+
+        #endregion
     }
 }
