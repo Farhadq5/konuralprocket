@@ -6,13 +6,14 @@ using GMap.NET.WindowsForms.Markers;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
-using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.IO.Ports;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace konuralprocketGS
 {
@@ -22,11 +23,12 @@ namespace konuralprocketGS
         private GyroGL_Class gyroGL;
 
         private mapcontrol map;
+      
 
         // veriables here to get value from gyro and oomfactor for glcontrol and marker for map
         private SerialPort serialPort;
         public double x = 0.0f, y = 0.0f, z = 0.0f;
-        private float zoomFactor = 1.0f;
+        private float zoomFactor = 1.8f;
         private string datarecive;
         private readonly GMapOverlay markerOverlay = new GMapOverlay("marker");
         private readonly GMarkerGoogle currentPosationMarker = new GMarkerGoogle(new PointLatLng(40.839989, 31.155060), GMarkerGoogleType.blue_dot);
@@ -46,15 +48,9 @@ namespace konuralprocketGS
             gyroGL = new GyroGL_Class(glControl1);
 
 
-
-            //this code works in bakground for opening and closing the serialport
-            backgroundWorker1 = new BackgroundWorker();
-            backgroundWorker1.DoWork += backgroundWorker_DoWork;
-            backgroundWorker1.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
-
             // Set the interval in milliseconds (adjust as needed)
             serialtimer.Tick += DataTimer_Tick;
-            serialtimer.Interval = 100;
+            serialtimer.Interval = 200;
             serialtimer.Start();
 
             //this code gets the value from label the speed and altitude and sends it to class
@@ -201,6 +197,7 @@ namespace konuralprocketGS
             {
                 string dataReceived = await ReadLineAsync(serialPort.BaseStream);
                 this.Invoke(new Action(() => parsedata(dataReceived)));
+
             }
             catch (Exception ex)
             {
@@ -214,52 +211,40 @@ namespace konuralprocketGS
             byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
             StringBuilder line = new StringBuilder();
 
-            while (true)
+
+            try
             {
-                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-
-                if (bytesRead == 0)
+                while (true)
                 {
-                    // Disconnection detected
-                    return null; // Or throw an exception if disconnection should be treated as an error
+                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
 
-                }
+                    if (bytesRead == 0)
+                    {
+                        // Disconnection detected
+                        return null; // Or throw an exception if disconnection should be treated as an error
 
-                string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                line.Append(data);
+                    }
 
-                int newlineIndex;
-                while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
-                {
-                    string lineStr = line.ToString(0, newlineIndex);
-                    line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
-                    return lineStr;
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    line.Append(data);
+
+                    int newlineIndex;
+                    while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
+                    {
+                        string lineStr = line.ToString(0, newlineIndex);
+                        line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
+                        return lineStr;
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                // Handle exceptions, e.g., log the error
+                Console.WriteLine($"Error in ReadLineAsync: {ex.Message}");
+                return null;
+            }
+
         }
-        //private async Task<string> ReadLineAsync(Stream stream)
-        //{
-        //    byte[] buffer = new byte[1024];
-        //    int bytesRead = 0;
-        //    char lastchar = '\0';
-
-        //    while (true)
-        //    {
-        //        bytesRead += await stream.ReadAsync(buffer, bytesRead, 1);
-
-        //        if (bytesRead > 0)
-        //        {
-        //            char currentCahr = (char)buffer[bytesRead - 1];
-
-        //            if (currentCahr == '\n' && lastchar == '\r')
-        //            {
-        //                //return a newline character return the compleat line
-        //                return Encoding.ASCII.GetString(buffer, 0, bytesRead - 2);
-        //            }
-        //            lastchar = currentCahr;
-        //        }
-        //    }
-        //}
 
         private void parsedata(string data)
         {
@@ -267,14 +252,20 @@ namespace konuralprocketGS
             richTextBox1.AppendText($"recived data {data}\n");
             // Split the data using the ',' delimiter
             string[] values = data.Split(',');
-
-            if (values.Length >= 6) // Check if there are at least 5 elements in the array
+            try
             {
-                updategyro(values[0], values[1], values[2]);
-                updatebmp(values[3], values[4], values[5]);
-                // gps(values[6], values[7]);
+                if (values != null && values.Length >= 3) // Check if the array is not null and has at least 6 elements
+                {
+                    updategyro(values[0], values[1], values[2]);
+                    updatebmp(values[3], values[4]);
+                    // gps(values[6], values[7]);
+                }
             }
-
+            catch (Exception)
+            {
+                MessageBox.Show("there is a NULL or your incress your aray size");
+            }
+            
         }
 
         // gyro controll
@@ -283,6 +274,8 @@ namespace konuralprocketGS
             label45.Text = X;
             label49.Text = Y;
             label50.Text = Z;
+            //label44.Text = hiz;
+
             //label15.Text = X;
             //label16.Text = Y;
             //label17.Text = Z;
@@ -298,7 +291,7 @@ namespace konuralprocketGS
 
 
             // Trigger a repaint of the OpenGL control on a separate thread
-            Task.Run(() => glControl1.Invalidate());
+            glControl1.Invalidate();
 
             //this code put X,Y,Z values in selicted parts of the datagridview
             int rowIndex = dataGridView1.Rows.Add();
@@ -308,18 +301,18 @@ namespace konuralprocketGS
         }
 
         // tempreture and pressure controll
-        private void updatebmp(string tempreture, string pressure, string altitude)
+        private void updatebmp(string tempreture, string pressure)
         {
             label43.Text = tempreture;
             label41.Text = pressure;
-            label47.Text = altitude;
+            //label47.Text = altitude;
 
-            Task.Run(() => glControl1.Invalidate());
+            glControl1.Invalidate();
             int rowIndex = dataGridView1.Rows.Add();
             dataGridView1.Rows[rowIndex].Cells["Column13"].Value = tempreture;
             dataGridView1.Rows[rowIndex].Cells["Column6"].Value = pressure;
-            dataGridView1.Rows[rowIndex].Cells["Column8"].Value = altitude;
-            dataGridView1.Rows[rowIndex].Cells["Column10"].Value = altitude;
+            //dataGridView1.Rows[rowIndex].Cells["Column8"].Value = altitude;
+            //dataGridView1.Rows[rowIndex].Cells["Column10"].Value = altitude;
 
         }
 
@@ -334,7 +327,7 @@ namespace konuralprocketGS
                 // Check if both latitude and longitude are not zero
                 if (lat1 != 0.0 || lng1 != 0.0)
                 {
-                   // txtlat.Text = lat1.ToString();
+                    // txtlat.Text = lat1.ToString();
                     //txtlong.Text = lng1.ToString();
 
                     map.UpdateMapPosition(lat1, lng1);
@@ -410,22 +403,16 @@ namespace konuralprocketGS
 
         }
 
+        private Thread connectionThread;
         //serialport connect and disconnect button
         private void button3_Click(object sender, EventArgs e)
         {
             if (comboBox6.SelectedIndex >= 0)
             {
-                if (!serialPort.IsOpen)
+                if (connectionThread == null || !connectionThread.IsAlive)
                 {
-                    // Set the selected COM port
-                    serialPort.PortName = comboBox6.SelectedItem.ToString();
-
-                    // Start background worker to open the serial port
-                    backgroundWorker1.RunWorkerAsync();
-                }
-                else
-                {
-                    DisconnectSerialPort();
+                    connectionThread = new Thread(ConnectOrDisconnect);
+                    connectionThread.Start();
                 }
             }
             else
@@ -434,39 +421,46 @@ namespace konuralprocketGS
             }
         }
 
-        private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
+        private void ConnectOrDisconnect()
         {
-            try
+            if (!serialPort.IsOpen)
             {
-                serialPort.Open();
-                e.Result = true;
-            }
-            catch (Exception ex)
-            {
-                e.Result = ex.Message;
-            }
-        }
-
-        private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (e.Result is bool && (bool)e.Result)
-            {
-                MessageBox.Show($"Connected to {serialPort.PortName}");
-                button3.BackColor = Color.Red;
-                button3.Text = "Bağlantıyı kes";
+                ConnectSerialPort();
             }
             else
             {
-                MessageBox.Show($"Error opening serial port: {e.Result}");
+                DisconnectSerialPort();
             }
         }
-
+        private void ConnectSerialPort()
+        {
+            if (!serialPort.IsOpen)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    // Set the selected COM port
+                    serialPort.PortName = comboBox6.SelectedItem.ToString();
+                    serialPort.Open();
+                    MessageBox.Show($"Connected to {serialPort.PortName}");
+                    button3.BackColor = Color.Red;
+                    button3.Text = "Bağlantıyı kes";
+                });
+            }
+            else
+                throw new Exception("error port denied connection");
+        }
         private void DisconnectSerialPort()
         {
-            serialPort.Close();
-            MessageBox.Show($"Disconnected from {serialPort.PortName}");
-            button3.BackColor = Color.Green; ; // Change button back color to default
-            button3.Text = "Bağlan"; // Change button text
+            if (serialPort.IsOpen)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    serialPort.Close();
+                    MessageBox.Show($"Disconnected from {serialPort.PortName}");
+                    button3.BackColor = Color.Green;
+                    button3.Text = "Bağlan";
+                });
+            }
         }
 
 
@@ -503,7 +497,7 @@ namespace konuralprocketGS
 
         }
 
-      
+
 
 
         private void glControl1_Load(object sender, EventArgs e)
@@ -644,13 +638,6 @@ namespace konuralprocketGS
             label7.Text = "0";
             label39.Text = "0";
             label40.Text = "0";
-        }
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            for (int i = 0; i <= 3000; i += 20)
-            {
-                label44.Text = i.ToString();
-            }
         }
 
     }

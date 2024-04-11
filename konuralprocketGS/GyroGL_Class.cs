@@ -20,8 +20,8 @@ namespace konuralprocketGS
        
         public double x = 0.0f, y = 0.0f, z = 0.0f;
        // bool by = false, bx = false, bz = false;
-        private float zoomFactor = 1.0f;
-        Color renk1 = Color.White, renk2 = Color.Red;
+       
+        Color color1 = Color.Red, color2 = Color.Black;
 
         public string speed { get; set; }
 
@@ -30,14 +30,13 @@ namespace konuralprocketGS
 
         public void DrawRocketComponents(float step, float topla, float radius)
         {
-            silindir(step, topla, radius, 3f, -8);
+            silindir(step, topla, radius, 9f, -8);
 
-            koni(step, topla, radius , 0.5f, 3, 10.5f);
-            koni(step, step, radius, 2.8f, -7.0f, -12.0f);
+            koni(step, topla, radius , 0.5f, 9, 17.9f);
+            koni(step, step, radius, 2.8f, -8.0f, -12.0f);
+        
+            Pervane(-12.0f, 7.3f, 0.05f, 8.5f);
            
-                 
-            Pervane(-13.0f, 6.0f, 0.1f, 5.3f);
-
 
         }
 
@@ -47,7 +46,7 @@ namespace konuralprocketGS
             GL.Begin(PrimitiveType.Quads);//Y EKSEN CIZIM DAİRENİN
             while (step <= 360)
             {
-                renk_ataması(step);
+                GL.Color3(color2);
                 float ciz1_x = (float)(radius * Math.Cos(step * Math.PI / 180F));
                 float ciz1_y = (float)(radius * Math.Sin(step * Math.PI / 180F));
                 GL.Vertex3(ciz1_x, dikey1, ciz1_y);
@@ -66,7 +65,7 @@ namespace konuralprocketGS
             topla = step;
             while (step <= 180)// UST KAPAK
             {
-                renk_ataması(step);
+                GL.Color3(color2);
                 float ciz1_x = (float)(radius * Math.Cos(step * Math.PI / 180F));
                 float ciz1_y = (float)(radius * Math.Sin(step * Math.PI / 180F));
                 GL.Vertex3(ciz1_x, dikey1, ciz1_y);
@@ -83,7 +82,7 @@ namespace konuralprocketGS
             topla = step;
             while (step <= 180)//ALT KAPAK
             {
-                renk_ataması(step);
+                GL.Color3(color2);
 
                 float ciz1_x = (float)(radius * Math.Cos(step * Math.PI / 180F));
                 float ciz1_y = (float)(radius * Math.Sin(step * Math.PI / 180F));
@@ -105,7 +104,7 @@ namespace konuralprocketGS
             GL.Begin(PrimitiveType.Lines);//Y EKSEN CIZIM DAİRENİN
             while (step <= 360)
             {
-                renk_ataması(step);
+                GL.Color3(color1);
                 float ciz1_x = (float)(radius1 * Math.Cos(step * Math.PI / 180F));
                 float ciz1_y = (float)(radius1 * Math.Sin(step * Math.PI / 180F));
                 GL.Vertex3(ciz1_x, dikey1, ciz1_y);
@@ -122,7 +121,7 @@ namespace konuralprocketGS
             topla = step;
             while (step <= 180)// UST KAPAK
             {
-                renk_ataması(step);
+                GL.Color3(color2);
                 float ciz1_x = (float)(radius2 * Math.Cos(step * Math.PI / 180F));
                 float ciz1_y = (float)(radius2 * Math.Sin(step * Math.PI / 180F));
                 GL.Vertex3(ciz1_x, dikey2, ciz1_y);
@@ -143,64 +142,51 @@ namespace konuralprocketGS
         {
             GL.Begin(PrimitiveType.Quads);
 
-            // Front face of the fin (right side)
-            GL.Color3(renk2);
-            GL.Vertex3(uzunluk, yukseklik, kalinlik);
-            GL.Vertex3(uzunluk, yukseklik + egiklik, -kalinlik);
-            GL.Vertex3(0, yukseklik + egiklik, -kalinlik);
-            GL.Vertex3(0, yukseklik, kalinlik);
+            // Define colors for the fins
+            GL.Color3(color2);
 
-            // Back face of the fin (right side)
-            GL.Vertex3(-uzunluk, yukseklik + egiklik, kalinlik);
-            GL.Vertex3(-uzunluk, yukseklik, -kalinlik);
-            GL.Vertex3(0, yukseklik, -kalinlik);
-            GL.Vertex3(0, yukseklik + egiklik, kalinlik);
+            // Front face of the first fin (right side)
+            GL.Vertex3(0, yukseklik, 0);                           // Apex of the fin
+            GL.Vertex3(uzunluk, yukseklik, -kalinlik);              // Leading edge point
+            GL.Vertex3(0, yukseklik + egiklik, -kalinlik);          // Trailing edge point
+            GL.Vertex3(-uzunluk, yukseklik, -kalinlik);             // Bottom edge point
 
-            // Top face of the fin with curvature
-            GL.Color3(renk1);
-            for (float t = 0; t <= 1; t += 0.1f)
-            {
-                // Calculate control points for Bézier curve
-                float controlX1 = kalinlik * (1 - t);
-                float controlY1 = yukseklik;
-                float controlZ1 = (float)(kalinlik * Math.Sin(Math.PI * t));
+            // Back face of the first fin (right side)
+            GL.Vertex3(0, yukseklik, 0);                           // Apex of the fin
+            GL.Vertex3(0, yukseklik + egiklik, kalinlik);           // Trailing edge point
+            GL.Vertex3(-uzunluk, yukseklik, kalinlik);              // Leading edge point
+            GL.Vertex3(uzunluk, yukseklik, kalinlik);               // Bottom edge point
 
-                float controlX2 = -kalinlik * (1 - t);
-                float controlY2 = yukseklik + egiklik;
-                float controlZ2 = (float)(-kalinlik * Math.Sin(Math.PI * t));
+            // Bottom face of the first fin
+            GL.Vertex3(uzunluk, yukseklik, -kalinlik);              // Leading edge point
+            GL.Vertex3(-uzunluk, yukseklik, -kalinlik);             // Trailing edge point
+            GL.Vertex3(-uzunluk, yukseklik, kalinlik);              // Bottom edge point
+            GL.Vertex3(uzunluk, yukseklik, kalinlik);               // Apex of the fin
 
-                // Calculate points on the Bézier curve
-                float bezierX = (1 - t) * controlX1 + t * controlX2;
-                float bezierY = (1 - t) * controlY1 + t * controlY2;
-                float bezierZ = (1 - t) * controlZ1 + t * controlZ2;
+            // Second fin perpendicular to the first fin
+            // Adjust positions accordingly for a four-fin cross configuration
+            GL.Vertex3(0, yukseklik, 0);                           // Apex of the fin
+            GL.Vertex3(kalinlik, yukseklik, -uzunluk);             // Leading edge point
+            GL.Vertex3(kalinlik, yukseklik + egiklik, 0);          // Trailing edge point
+            GL.Vertex3(kalinlik, yukseklik, uzunluk);              // Bottom edge point
 
-                GL.Vertex3(bezierX, bezierY, bezierZ);
+            // Back face of the second fin (perpendicular to the first fin)
+            GL.Vertex3(0, yukseklik, 0);                           // Apex of the fin
+            GL.Vertex3(-kalinlik, yukseklik, uzunluk);             // Leading edge point
+            GL.Vertex3(-kalinlik, yukseklik + egiklik, 0);         // Trailing edge point
+            GL.Vertex3(-kalinlik, yukseklik, -uzunluk);            // Bottom edge point
 
-                // If not the last iteration, calculate the next point on the curve
-                if (t < 1)
-                {
-                    float nextBezierX = (1 - (t + 0.1f)) * controlX1 + (t + 0.1f) * controlX2;
-                    float nextBezierY = (1 - (t + 0.1f)) * controlY1 + (t + 0.1f) * controlY2;
-                    float nextBezierZ = (1 - (t + 0.1f)) * controlZ1 + (t + 0.1f) * controlZ2;
-
-                    GL.Vertex3(nextBezierX, nextBezierY, nextBezierZ);
-                }
-            }
-
-            // Bottom face of the fin
-            GL.Vertex3(kalinlik, yukseklik + egiklik, +uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik, +uzunluk);
-            GL.Vertex3(-kalinlik, yukseklik, 0.0);
-            GL.Vertex3(kalinlik, yukseklik + egiklik, 0.0);
-
-            // Right face of the fin
-            GL.Vertex3(uzunluk, yukseklik, kalinlik);
-            GL.Vertex3(uzunluk, yukseklik + egiklik, -kalinlik);
-            GL.Vertex3(-uzunluk, yukseklik + egiklik, kalinlik);
-            GL.Vertex3(-uzunluk, yukseklik, -kalinlik);
+            // Bottom face of the second fin
+            GL.Vertex3(kalinlik, yukseklik, -uzunluk);             // Leading edge point
+            GL.Vertex3(-kalinlik, yukseklik, -uzunluk);            // Trailing edge point
+            GL.Vertex3(-kalinlik, yukseklik, uzunluk);             // Bottom edge point
+            GL.Vertex3(kalinlik, yukseklik, uzunluk);              // Apex of the fin
 
             GL.End();
         }
+
+
+
 
         //public void DrawCoordinateAxes()
         //{
@@ -241,25 +227,25 @@ namespace konuralprocketGS
             GL.Disable(EnableCap.ScissorTest);
         }
        
-        public void renk_ataması(float step)
-        {
-            if (step < 45)
-                GL.Color3(renk2);
-            else if (step < 90)
-                GL.Color3(renk1);
-            else if (step < 135)
-                GL.Color3(renk2);
-            else if (step < 180)
-                GL.Color3(renk1);
-            else if (step < 225)
-                GL.Color3(renk2);
-            else if (step < 270)
-                GL.Color3(renk1);
-            else if (step < 315)
-                GL.Color3(renk2);
-            else if (step < 360)
-                GL.Color3(renk1);
-        }
+        //public void renk_ataması(float step)
+        //{
+        //    if (step < 45)
+        //        GL.Color3(renk2);
+        //    else if (step < 90)
+        //        GL.Color3(renk1);
+        //    else if (step < 135)
+        //        GL.Color3(renk2);
+        //    else if (step < 180)
+        //        GL.Color3(renk1);
+        //    else if (step < 225)
+        //        GL.Color3(renk2);
+        //    else if (step < 270)
+        //        GL.Color3(renk1);
+        //    else if (step < 315)
+        //        GL.Color3(renk2);
+        //    else if (step < 360)
+        //        GL.Color3(renk1);
+        //}
 
         // Define font and brush for drawing the text
         Font largeFont = new Font("Arial", 12, FontStyle.Bold);
@@ -269,6 +255,33 @@ namespace konuralprocketGS
 
         const int transparency = 150;
         int totalLines = 11;
+
+        public void Drawsaltitudehorozontal(Graphics g)
+        {
+            // Define the line coordinates for the speed indicator
+            int speedLineX1 = 336; // X-coordinate of the line start
+            int speedLineY1 = 10; // Y-coordinate of the line start
+
+            int speedLineY2 = glControl1.Height - 10; // Y-coordinate of the line end  
+
+            float pitchInterval = (float)(speedLineY2 - speedLineY1) / (totalLines - 1);
+
+            // Create a transparent color for horozontal line indecators
+            Color transparenthorozontal = Color.FromArgb(transparency, Color.Black);
+
+            // Draw the background of the altitude indicator
+            g.FillRectangle(new SolidBrush(transparenthorozontal), speedLineX1 - 15, speedLineY1, 30, speedLineY2 + 8 - speedLineY1);
+
+            // Draw the speed scale and text
+            for (int i = 0; i < totalLines; i++)
+            {
+                int pitchY = speedLineY2 - (int)(i * pitchInterval);
+                g.DrawLine(Pens.White, speedLineX1 - 10, pitchY, speedLineX1 + 10, pitchY);
+
+                // Draw the value of each horizontal line
+                g.DrawString((i * scaleIncrement).ToString(), font, Brushes.Gray, speedLineX1 - 43, pitchY - font.Height / 2);
+            }
+        }
 
         public void DrawAltitudeIndicator(Graphics g, string altitudeText, int altitudeValue)
         {
@@ -348,7 +361,7 @@ namespace konuralprocketGS
                 pitchLines.Add((altitude, y));
             }
 
-            // Draw the pitch indications and display their corresponding altitude values          
+            // Draw the pitch indications and display their corresponding altitude values
             foreach (var pitchLine in pitchLines)
             {
                 Pen lineColor;
@@ -443,7 +456,7 @@ namespace konuralprocketGS
             Drawspeedhorozontal(g);
 
             // Define a scaling factor for pointer movement
-            float pointerScale = 0.330f; // Adjust as needed for desired speed
+            float pointerScale = 0.329f; // Adjust as needed for desired speed
 
             // Calculate the pointer position
             int pointerY = (int)(speedLineY2 - speedValue * (speedLineY2 - speedLineY1) / 100 * pointerScale);
