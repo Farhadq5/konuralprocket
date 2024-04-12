@@ -14,7 +14,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
-using System.Windows.Media;
 
 namespace konuralprocketGS
 {
@@ -24,7 +23,7 @@ namespace konuralprocketGS
         private GyroGL_Class gyroGL;
 
         private mapcontrol map;
-      
+
 
         // veriables here to get value from gyro and oomfactor for glcontrol and marker for map
         private SerialPort serialPort;
@@ -38,6 +37,7 @@ namespace konuralprocketGS
         {
             InitializeComponent();
             InitializeSerialPort();
+            Initializesatalite_satSerialPort();
             InitializeGMap();
             InitializeGMap2();
 
@@ -61,11 +61,13 @@ namespace konuralprocketGS
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+          
             PopulateCOMPorts();
             PopulateBaudRates();
-            timer1.Interval = 1;
-
         }
+
+
+
         private void DataTimer_Tick(object sender, EventArgs e)
         {
             // This event will be triggered every 100 milliseconds (adjust as needed)
@@ -80,78 +82,8 @@ namespace konuralprocketGS
                 }
             }
         }
-        #region opengl
-        private void glControl1_Paint(object sender, PaintEventArgs e)
-        {
-            string altitudeText = label47.Text;
-            double altitudeValue = 0;
-            double.TryParse(altitudeText, out altitudeValue);
-            int altitudevalue = (int)Math.Round(altitudeValue);
 
-            string speedtext = label44.Text;
-            double speedValue = 0;
-            double.TryParse(speedtext, out speedValue);
-            int speedvalue = (int)Math.Round(speedValue);
-
-            // Clear the buffer
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            // Set up perspective and look-at matrices
-            Matrix4 perspective = Matrix4.CreatePerspectiveFieldOfView(1.2f, glControl1.Width / (float)glControl1.Height, 1, 10000);
-            Matrix4 lookat = Matrix4.LookAt(25 * zoomFactor, 0, 0, 0, 0, 0, 0, 1, 0);
-
-            // Load matrices
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadIdentity();
-            GL.LoadMatrix(ref perspective);
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadIdentity();
-            GL.LoadMatrix(ref lookat);
-
-            GL.Viewport(0, 0, glControl1.Width, glControl1.Height);
-            GL.Enable(EnableCap.DepthTest);
-            GL.DepthFunc(DepthFunction.Less);
-
-            // Draw background colors
-            gyroGL.DrawBackground();
-
-            // Rotate based on gyro values
-            GL.Rotate(x, 1.0, 0.0, 0.0);
-            GL.Rotate(z, 0.0, 1.0, 0.0);
-            GL.Rotate(y, 0.0, 0.0, 1.0);
-
-            // Draw rocket components and coordinate axes
-            gyroGL.DrawRocketComponents(0.01f, 0.01f, 3.1f);
-            // gyroGL.DrawCoordinateAxes();
-
-            // Swap buffers
-            glControl1.SwapBuffers();
-
-            // Draw speed and altitude indicators
-            gyroGL.DrawSpeedIndicator(e.Graphics, speedtext, speedvalue);
-            gyroGL.DrawAltitudeIndicator(e.Graphics, altitudeText, altitudevalue);
-
-
-            GL.End();
-        }
-        private void glControl1_MouseWheel(object sender, MouseEventArgs e)
-        {
-            // You can adjust the zoom sensitivity by changing the value in the next line
-            float zoomSensitivity = 0.01f;
-
-            // Update the zoom factor based on the mouse wheel delta
-            zoomFactor += e.Delta * zoomSensitivity;
-
-            // Ensure the zoom factor is within a reasonable range
-            zoomFactor = Math.Max(zoomFactor, 0.8f);
-            zoomFactor = Math.Min(zoomFactor, 3.0f);
-
-            // Redraw the OpenGL control
-            glControl1.Invalidate();
-        }
-
-        #endregion
+        #region rocket serialport
 
         #region mapcontrol
         private void InitializeGMap()
@@ -167,23 +99,6 @@ namespace konuralprocketGS
 
             // Add GMapControl to the form
             mapcontrolrocket.Overlays.Add(markerOverlay);
-        }
-        #endregion
-
-        #region mapcontrol 2
-        private void InitializeGMap2()
-        {
-            // Set the map provider (you can choose other providers)
-            mapcontrolstaite.MapProvider = GMapProviders.GoogleMap;
-
-            // Set the initial position and zoom level
-            mapcontrolstaite.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
-            mapcontrolstaite.MinZoom = 1;
-            mapcontrolstaite.MaxZoom = 20;
-            mapcontrolstaite.Zoom = 12;
-
-            // Add GMapControl to the form
-            mapcontrolstaite.Overlays.Add(markerOverlay);
         }
         #endregion
 
@@ -268,7 +183,7 @@ namespace konuralprocketGS
         //    {
         //        MessageBox.Show("there is a NULL or your incress your aray size");
         //    }
-            
+
         //}
 
         //// gyro controll
@@ -350,13 +265,6 @@ namespace konuralprocketGS
         #endregion
 
         #region new implementation
-
-        // Define variables to store received data
-        private string gyroX = 0.ToString();
-        private string gyroY = 0.ToString();
-        private string gyroZ = 0.ToString();
-        private string temperature = 0.ToString();
-        private string pressure = 0.ToString();
         private void InitializeSerialPort()
         {
             serialPort = new SerialPort();
@@ -367,13 +275,94 @@ namespace konuralprocketGS
             timer.Interval = 150; // Set the interval to 150 milliseconds
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
+
         }
+
+
+        private Thread connectionThread;
+        //serialport connect and disconnect button
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (comboBox6.SelectedIndex >= 0)
+            {
+                if (connectionThread == null || !connectionThread.IsAlive)
+                {
+                    connectionThread = new Thread(ConnectOrDisconnect);
+                    connectionThread.Start();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a COM port.");
+            }
+        }
+
+        private void ConnectOrDisconnect()
+        {
+            if (!serialPort.IsOpen)
+            {
+                ConnectSerialPort();
+                if (this.InvokeRequired)
+                {
+                    label55.Invoke((MethodInvoker)(() => label55.Font = new Font(label55.Font.FontFamily, 10)));
+                    label55.Invoke((MethodInvoker)(() => label55.ForeColor = Color.Green));
+                    label55.Invoke((MethodInvoker)(() => label55.Text = "roket Connect"));
+                }
+            }
+            else
+            {
+                DisconnectSerialPort();
+                if (this.InvokeRequired)
+                {
+                    label55.Invoke((MethodInvoker)(() => label55.Font = new Font(label55.Font.FontFamily, 10)));
+                    label55.Invoke((MethodInvoker)(() => label55.ForeColor = Color.Red));
+                    label55.Invoke((MethodInvoker)(() => label55.Text = "roket Disconnect"));
+                }
+            }
+        }
+        private void ConnectSerialPort()
+        {
+            if (!serialPort.IsOpen)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    // Set the selected COM port
+                    serialPort.PortName = comboBox6.SelectedItem.ToString();
+                    serialPort.Open();
+                    MessageBox.Show($"Connected to {serialPort.PortName}");
+                    button3.BackColor = Color.Red;
+                    button3.Text = "Bağlantıyı kes";
+                });
+            }
+            else
+                throw new Exception("error port denied connection");
+        }
+        private void DisconnectSerialPort()
+        {
+            if (serialPort.IsOpen)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    serialPort.Close();
+                    MessageBox.Show($"Disconnected from {serialPort.PortName}");
+                    button3.BackColor = Color.Green;
+                    button3.Text = "Bağlan";
+                });
+            }
+        }
+
+        // Define variables to store received data
+        private string gyroX = 0.ToString();
+        private string gyroY = 0.ToString();
+        private string gyroZ = 0.ToString();
+        private string temperature = 0.ToString();
+        private string pressure = 0.ToString();
 
         private async void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                string dataReceived = ReadLineAsync(serialPort.BaseStream).Result;
+                string dataReceived = await ReadLineAsync(serialPort.BaseStream);
                 ParseData(dataReceived);
             }
             catch (Exception ex)
@@ -436,36 +425,333 @@ namespace konuralprocketGS
             try
             {
                 string[] values = data.Split(',');
-                if(values.Length <= 5)
+                if (values.Length <= 5)
                 {
                     gyroX = values[0];
                     gyroY = values[1];
                     gyroZ = values[2];
                     temperature = values[3];
-                    pressure = values[4];               
-                }          
+                    pressure = values[4];
+                }
             }
             catch (Exception)
             {
 
                 throw;
             }
-           
+
         }
-        // gyro controll
+
         private void UpdateLabels()
         {
-            // Update gyro labels
-            label45.Invoke((MethodInvoker)(() => label45.Text = gyroX));
-            label49.Invoke((MethodInvoker)(() => label49.Text = gyroY));
-            label50.Invoke((MethodInvoker)(() => label50.Text = gyroZ));
+            if (this.InvokeRequired)
+            {
+                // Update gyro labels
+                label45.Invoke((MethodInvoker)(() => label45.Text = gyroX));
+                label49.Invoke((MethodInvoker)(() => label49.Text = gyroY));
+                label50.Invoke((MethodInvoker)(() => label50.Text = gyroZ));
 
-            // Update temperature and pressure labels
-            label43.Invoke((MethodInvoker)(() => label43.Text = temperature));
-            label41.Invoke((MethodInvoker)(() => label41.Text = pressure));
+                // Update temperature and pressure labels
+                label43.Invoke((MethodInvoker)(() => label43.Text = temperature));
+                label41.Invoke((MethodInvoker)(() => label41.Text = pressure));
+            }
         }
 
         #endregion
+
+        #endregion
+
+        #region Satalite serialpoer
+
+        #region opengl
+        private void glControl1_Paint(object sender, PaintEventArgs e)
+        {
+            string altitudeText = label47.Text;
+            double altitudeValue = 0;
+            double.TryParse(altitudeText, out altitudeValue);
+            int altitudevalue = (int)Math.Round(altitudeValue);
+
+            string speedtext = label44.Text;
+            double speedValue = 0;
+            double.TryParse(speedtext, out speedValue);
+            int speedvalue = (int)Math.Round(speedValue);
+
+            // Clear the buffer
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            // Set up perspective and look-at matrices
+            Matrix4 perspective = Matrix4.CreatePerspectiveFieldOfView(1.2f, glControl1.Width / (float)glControl1.Height, 1, 10000);
+            Matrix4 lookat = Matrix4.LookAt(25 * zoomFactor, 0, 0, 0, 0, 0, 0, 1, 0);
+
+            // Load matrices
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+            GL.LoadMatrix(ref perspective);
+
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
+            GL.LoadMatrix(ref lookat);
+
+            GL.Viewport(0, 0, glControl1.Width, glControl1.Height);
+            GL.Enable(EnableCap.DepthTest);
+            GL.DepthFunc(DepthFunction.Less);
+
+            // Draw background colors
+            gyroGL.DrawBackground();
+
+            // Rotate based on gyro values
+            GL.Rotate(x, 1.0, 0.0, 0.0);
+            GL.Rotate(z, 0.0, 1.0, 0.0);
+            GL.Rotate(y, 0.0, 0.0, 1.0);
+
+            // Draw rocket components and coordinate axes
+            gyroGL.DrawRocketComponents(0.01f, 0.01f, 3.1f);
+            // gyroGL.DrawCoordinateAxes();
+
+            // Swap buffers
+            glControl1.SwapBuffers();
+
+            // Draw speed and altitude indicators
+            gyroGL.DrawSpeedIndicator(e.Graphics, speedtext, speedvalue);
+            gyroGL.DrawAltitudeIndicator(e.Graphics, altitudeText, altitudevalue);
+
+
+            GL.End();
+        }
+        private void glControl1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            // You can adjust the zoom sensitivity by changing the value in the next line
+            float zoomSensitivity = 0.01f;
+
+            // Update the zoom factor based on the mouse wheel delta
+            zoomFactor += e.Delta * zoomSensitivity;
+
+            // Ensure the zoom factor is within a reasonable range
+            zoomFactor = Math.Max(zoomFactor, 0.8f);
+            zoomFactor = Math.Min(zoomFactor, 3.0f);
+
+            // Redraw the OpenGL control
+            glControl1.Invalidate();
+        }
+
+        #endregion
+
+        #region mapcontrol 2
+        private void InitializeGMap2()
+        {
+            // Set the map provider (you can choose other providers)
+            mapcontrolstaite.MapProvider = GMapProviders.GoogleMap;
+
+            // Set the initial position and zoom level
+            mapcontrolstaite.Position = new PointLatLng(40.901233, 31.167545); // Default to center of the world
+            mapcontrolstaite.MinZoom = 1;
+            mapcontrolstaite.MaxZoom = 20;
+            mapcontrolstaite.Zoom = 12;
+
+            // Add GMapControl to the form
+            mapcontrolstaite.Overlays.Add(markerOverlay);
+        }
+        #endregion
+
+        private Thread sat_connectionThread;
+        //serialport connect and disconnect button
+        private void button4_Click_1(object sender, EventArgs e)
+        {
+            if (comboBox6.SelectedIndex >= 0)
+            {
+                if (sat_connectionThread == null || !sat_connectionThread.IsAlive)
+                {
+                    connectionThread = new Thread(ConnectOrDisconnect_sat);
+                    connectionThread.Start();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Please select a COM port.");
+            }
+        }
+
+        private void ConnectOrDisconnect_sat()
+        {
+            if (!satserialport.IsOpen)
+            {
+                ConnectSerialPort_sat();
+                if (this.InvokeRequired)
+                {
+                    label19.Invoke((MethodInvoker)(() => label19.Font = new Font(label19.Font.FontFamily, 10)));
+                    label19.Invoke((MethodInvoker)(() => label19.ForeColor = Color.Green));
+                    label19.Invoke((MethodInvoker)(() => label19.Text = " Uydu Connect"));  
+                }
+            }
+            else
+            {
+                DisconnectSerialPort_sat();
+                if (this.InvokeRequired)
+                {
+                    label19.Invoke((MethodInvoker)(() => label19.Font = new Font(label19.Font.FontFamily, 10)));
+                    label19.Invoke((MethodInvoker)(() => label19.ForeColor = Color.Red));
+                    label19.Invoke((MethodInvoker)(() => label19.Text = " Uydu Disconnect"));  
+                }
+            }
+        }
+        private void ConnectSerialPort_sat()
+        {
+            if (!satserialport.IsOpen)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    // Set the selected COM port
+                    satserialport.PortName = comboBox6.SelectedItem.ToString();
+                    satserialport.Open();
+                    MessageBox.Show($"Connected to {satserialport.PortName}");
+                    button4.BackColor = Color.Red;
+                    button4.Text = "Yuk Bağlantıyı kes";
+                });
+            }
+            else
+                throw new Exception("error port denied connection");
+        }
+        private void DisconnectSerialPort_sat()
+        {
+            if (satserialport.IsOpen)
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    satserialport.Close();
+                    MessageBox.Show($"Disconnected from {satserialport.PortName}");
+                    button4.BackColor = Color.Green;
+                    button4.Text = "Yuk Bağlan";
+                });
+            }
+        }
+
+        private void Initializesatalite_satSerialPort()
+        {
+            satserialport = new SerialPort();
+            satserialport.DataReceived += satserialport_DataReceived;
+
+            // Configure and start the timer
+            sat_timer = new System.Timers.Timer();
+            sat_timer.Interval = 200; // Set the interval to 200 milliseconds
+            sat_timer.Elapsed += sat_timer_Elapsed;
+            sat_timer.Start();
+        }
+
+        private async void satserialport_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            try
+            {
+                string sat_dataReceived = await sat_ReadLineAsync(satserialport.BaseStream); // Use satserialport instead of serialPort
+                sat_ParseData(sat_dataReceived);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception details
+                Console.WriteLine($"Exception in SerialPort_DataReceived: {ex.Message}");
+            }
+        }
+
+        private async Task<string> sat_ReadLineAsync(Stream stream)
+        {
+            byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
+            StringBuilder line = new StringBuilder();
+
+
+            try
+            {
+                while (true)
+                {
+                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                    if (bytesRead == 0)
+                    {
+                        // Disconnection detected
+                        return null; // Or throw an exception if disconnection should be treated as an error
+
+                    }
+
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    line.Append(data);
+
+                    int newlineIndex;
+                    while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
+                    {
+                        string lineStr = line.ToString(0, newlineIndex);
+                        line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
+                        return lineStr;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions, e.g., log the error
+                Console.WriteLine($"Error in ReadLineAsync: {ex.Message}");
+                return null;
+            }
+
+        }
+
+        // Define variables to store received satalite data
+        private string sat_gyroX = 0.ToString();
+        private string sat_gyroY = 0.ToString();
+        private string sat_gyroZ = 0.ToString();
+        private string sat_temperature = 0.ToString();
+        private string sat_pressure = 0.ToString();
+        private System.Timers.Timer sat_timer;
+
+        private void sat_timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            // Update labels with received satalite data
+            sat_updatelabel();
+        }
+
+        private void sat_ParseData(string sat_dataReceived)
+        {
+            try
+            {
+                string[] sat_values = sat_dataReceived.Split(",");
+
+                if (sat_values.Length <= 5)
+                {
+                    sat_gyroX = sat_values[0];
+                    sat_gyroY = sat_values[1];
+                    sat_gyroZ = sat_values[2];
+                    sat_temperature = sat_values[3];
+                    sat_pressure = sat_values[4];
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        private void sat_updatelabel()
+        {
+            try
+            {
+                if (this.InvokeRequired)
+                {
+                    // Update gyro labels
+                    label15.Invoke((MethodInvoker)(() => label15.Text = sat_gyroX));
+                    label16.Invoke((MethodInvoker)(() => label16.Text = sat_gyroY));
+                    label4.Invoke((MethodInvoker)(() => label4.Text = sat_gyroZ));
+
+                    // Update temperature and pressure labels
+                    label28.Invoke((MethodInvoker)(() => label28.Text = sat_temperature));
+                    label33.Invoke((MethodInvoker)(() => label33.Text = sat_pressure));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(MessageBox.Show("there is error while invoking the labels" + ex));
+            }
+        }
+
+        #endregion
+
+
         private void PopulateCOMPorts()
         {
             comboBox6.Items.Clear();
@@ -524,93 +810,11 @@ namespace konuralprocketGS
 
         }
 
-        private Thread connectionThread;
-        //serialport connect and disconnect button
-        private void button3_Click(object sender, EventArgs e)
-        {
-            if (comboBox6.SelectedIndex >= 0)
-            {
-                if (connectionThread == null || !connectionThread.IsAlive)
-                {
-                    connectionThread = new Thread(ConnectOrDisconnect);
-                    connectionThread.Start();
-                }
-            }
-            else
-            {
-                MessageBox.Show("Please select a COM port.");
-            }
-        }
-
-        private void ConnectOrDisconnect()
-        {
-            if (!serialPort.IsOpen)
-            {
-                ConnectSerialPort();
-            }
-            else
-            {
-                DisconnectSerialPort();
-            }
-        }
-        private void ConnectSerialPort()
-        {
-            if (!serialPort.IsOpen)
-            {
-                this.Invoke((MethodInvoker)delegate
-                {
-                    // Set the selected COM port
-                    serialPort.PortName = comboBox6.SelectedItem.ToString();
-                    serialPort.Open();
-                    MessageBox.Show($"Connected to {serialPort.PortName}");
-                    button3.BackColor = Color.Red;
-                    button3.Text = "Bağlantıyı kes";
-                });
-            }
-            else
-                throw new Exception("error port denied connection");
-        }
-        private void DisconnectSerialPort()
-        {
-            if (serialPort.IsOpen)
-            {
-                this.Invoke((MethodInvoker)delegate
-                {
-                    serialPort.Close();
-                    MessageBox.Show($"Disconnected from {serialPort.PortName}");
-                    button3.BackColor = Color.Green;
-                    button3.Text = "Bağlan";
-                });
-            }
-        }
-
 
         private void button13_Click(object sender, EventArgs e)
         {
             temizle1();
-            //if (int.TryParse(label44.Text, out int altitudeValue))
-            //{
-            //    // Increment the altitude value by 20
-            //    altitudeValue += 25;
-
-            //    // Update label47 with the new altitude value
-            //    label44.Text = altitudeValue.ToString();
-
-
-            //}
-
-            //if (int.TryParse(label47.Text, out int speed))
-            //{
-            //    // Increment the altitude value by 20
-            //    speed += 1;
-
-            //    // Update label47 with the new altitude value
-            //    label47.Text = speed.ToString();
-
-
-            //}
-            //// Trigger the paint event to redraw the altitude indicator with the updated altitude value
-            //glControl1.Invalidate();
+           
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -717,49 +921,41 @@ namespace konuralprocketGS
 
         }
 
+        private void button23_Click(object sender, EventArgs e) => PopulateCOMPorts();
+
         private void button5_Click_1(object sender, EventArgs e)
         {
-            if (int.TryParse(label44.Text, out int altitudeValue))
-            {
-                // Increment the altitude value by 20
-                altitudeValue += 1;
-
-                // Update label47 with the new altitude value
-                label44.Text = altitudeValue.ToString();
-
-
-            }
-
-            if (int.TryParse(label47.Text, out int speed))
-            {
-                // Increment the altitude value by 20
-                speed += 20;
-
-                // Update label47 with the new altitude value
-                label47.Text = altitudeValue.ToString();
-
-
-            }
-            // Trigger the paint event to redraw the altitude indicator with the updated altitude value
-            glControl1.Invalidate();
+            sat_gyroX = 0.ToString();
+            sat_gyroY = 0.ToString();
+            sat_gyroZ = 0.ToString();
+            sat_temperature = 0.ToString();
+            sat_pressure = 0.ToString();
         }
 
         private void temizle1()
         {
-            label41.Text = "0";
-            label42.Text = "0";
-            label43.Text = "0";
-            label44.Text = "0";
-            label45.Text = "0";
-            label46.Text = "0";
-            label47.Text = "0";
-            label48.Text = "0";
-            label49.Text = "0";
-            label50.Text = "0";
-            label7.Text = "0";
-            label39.Text = "0";
-            label40.Text = "0";
+            gyroX = 0.ToString();
+            gyroY = 0.ToString();
+            gyroZ = 0.ToString();
+            temperature = 0.ToString();
+            pressure = 0.ToString();
         }
+
+        private void show_portaktivity()
+        {
+            //if (!satserialport.IsOpen)
+            //{
+              
+            //    label12.ForeColor = Color.Red;
+            //    label12.Text = "Disconnected";
+            //}
+            //else if(satserialport.IsOpen)
+            //{
+            //    label12.ForeColor = Color.Green;
+            //    label12.Text = "Connected";
+            //}
+        }
+
 
     }
 }
