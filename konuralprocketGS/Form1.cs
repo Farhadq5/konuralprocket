@@ -12,6 +12,7 @@ using System.IO.Ports;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Forms;
 using System.Windows.Media;
 
@@ -28,7 +29,7 @@ namespace konuralprocketGS
         // veriables here to get value from gyro and oomfactor for glcontrol and marker for map
         private SerialPort serialPort;
         public double x = 0.0f, y = 0.0f, z = 0.0f;
-        private float zoomFactor = 1.8f;
+        private float zoomFactor = 2f;
         private string datarecive;
         private readonly GMapOverlay markerOverlay = new GMapOverlay("marker");
         private readonly GMarkerGoogle currentPosationMarker = new GMarkerGoogle(new PointLatLng(40.839989, 31.155060), GMarkerGoogleType.blue_dot);
@@ -185,19 +186,195 @@ namespace konuralprocketGS
             mapcontrolstaite.Overlays.Add(markerOverlay);
         }
         #endregion
+
+        #region old parsing and puting in label
+        //private void InitializeSerialPort()
+        //{
+        //    serialPort = new SerialPort();
+        //    serialPort.DataReceived += SerialPort_DataReceived;
+        //}
+
+        //private async void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        //{
+        //    try
+        //    {
+        //        string dataReceived = await ReadLineAsync(serialPort.BaseStream);
+        //        this.Invoke(new Action(() => parsedata(dataReceived)));
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Log the exception details
+        //        Console.WriteLine($"Exception in SerialPort_DataReceived: {ex.Message}");
+        //    }
+        //}
+
+        //private async Task<string> ReadLineAsync(Stream stream)
+        //{
+        //    byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
+        //    StringBuilder line = new StringBuilder();
+
+
+        //    try
+        //    {
+        //        while (true)
+        //        {
+        //            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+
+        //            if (bytesRead == 0)
+        //            {
+        //                // Disconnection detected
+        //                return null; // Or throw an exception if disconnection should be treated as an error
+
+        //            }
+
+        //            string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+        //            line.Append(data);
+
+        //            int newlineIndex;
+        //            while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
+        //            {
+        //                string lineStr = line.ToString(0, newlineIndex);
+        //                line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
+        //                return lineStr;
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle exceptions, e.g., log the error
+        //        Console.WriteLine($"Error in ReadLineAsync: {ex.Message}");
+        //        return null;
+        //    }
+
+        //}
+
+        //private void parsedata(string data)
+        //{
+        //    Console.WriteLine($"recived data {data}");
+        //    richTextBox1.AppendText($"recived data {data}\n");
+        //    // Split the data using the ',' delimiter
+        //    string[] values = data.Split(',');
+        //    try
+        //    {
+        //        if (values != null && values.Length >= 4) // Check if the array is not null and has at least 6 elements
+        //        {
+        //            updategyro(values[0], values[1], values[2]);
+        //            updatebmp(values[3], values[4]);
+        //            // gps(values[6], values[7]);
+        //        }
+        //    }
+        //    catch (Exception)
+        //    {
+        //        MessageBox.Show("there is a NULL or your incress your aray size");
+        //    }
+            
+        //}
+
+        //// gyro controll
+        //private void updategyro(string X, string Y, string Z)
+        //{
+        //    label45.Text = X;
+        //    label49.Text = Y;
+        //    label50.Text = Z;
+        //    //label44.Text = hiz;
+
+        //    //label15.Text = X;
+        //    //label16.Text = Y;
+        //    //label17.Text = Z;
+
+
+        //    double.TryParse(X, out double a);
+        //    x = a;
+        //    double.TryParse(Y, out double b);
+        //    y = b;
+        //    double.TryParse(Z, out double c);
+        //    z = c;
+
+
+
+        //    // Trigger a repaint of the OpenGL control on a separate thread
+        //    glControl1.Invalidate();
+
+        //    //this code put X,Y,Z values in selicted parts of the datagridview
+        //    int rowIndex = dataGridView1.Rows.Add();
+        //    dataGridView1.Rows[rowIndex].Cells["Column18"].Value = X;
+        //    dataGridView1.Rows[rowIndex].Cells["Column19"].Value = Y;
+        //    dataGridView1.Rows[rowIndex].Cells["Column20"].Value = Z;
+        //}
+
+        //// tempreture and pressure controll
+        //private void updatebmp(string tempreture, string pressure)
+        //{
+        //    label43.Text = tempreture;
+        //    label41.Text = pressure;
+        //    //label47.Text = altitude;
+
+        //    glControl1.Invalidate();
+        //    int rowIndex = dataGridView1.Rows.Add();
+        //    dataGridView1.Rows[rowIndex].Cells["Column13"].Value = tempreture;
+        //    dataGridView1.Rows[rowIndex].Cells["Column6"].Value = pressure;
+        //    //dataGridView1.Rows[rowIndex].Cells["Column8"].Value = altitude;
+        //    //dataGridView1.Rows[rowIndex].Cells["Column10"].Value = altitude;
+
+        //}
+
+        //// gps controll
+        //private void gps(string lat, string lng)
+        //{
+        //    double lat1, lng1;
+
+        //    // Use double.TryParse to handle potential parsing errors
+        //    if (double.TryParse(lat, out lat1) && double.TryParse(lng, out lng1))
+        //    {
+        //        // Check if both latitude and longitude are not zero
+        //        if (lat1 != 0.0 || lng1 != 0.0)
+        //        {
+        //            // txtlat.Text = lat1.ToString();
+        //            //txtlong.Text = lng1.ToString();
+
+        //            map.UpdateMapPosition(lat1, lng1);
+
+        //            // gps controll 2 for the second map update it when its necessary
+        //            label39.Text = lat1.ToString();
+        //            label7.Text = lng1.ToString();
+
+        //            map.UpdateMapPosition2(lat1, lng1);
+
+        //            int rowIndex = dataGridView1.Rows.Add();
+        //            dataGridView1.Rows[rowIndex].Cells["Column15"].Value = lat1;
+        //            dataGridView1.Rows[rowIndex].Cells["Column16"].Value = lng1;
+        //        }
+        //    }
+        //}
+        #endregion
+
+        #region new implementation
+
+        // Define variables to store received data
+        private string gyroX = 0.ToString();
+        private string gyroY = 0.ToString();
+        private string gyroZ = 0.ToString();
+        private string temperature = 0.ToString();
+        private string pressure = 0.ToString();
         private void InitializeSerialPort()
         {
             serialPort = new SerialPort();
             serialPort.DataReceived += SerialPort_DataReceived;
+
+            // Configure and start the timer
+            System.Timers.Timer timer = new System.Timers.Timer();
+            timer.Interval = 150; // Set the interval to 150 milliseconds
+            timer.Elapsed += Timer_Elapsed;
+            timer.Start();
         }
 
         private async void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                string dataReceived = await ReadLineAsync(serialPort.BaseStream);
-                this.Invoke(new Action(() => parsedata(dataReceived)));
-
+                string dataReceived = ReadLineAsync(serialPort.BaseStream).Result;
+                ParseData(dataReceived);
             }
             catch (Exception ex)
             {
@@ -246,105 +423,49 @@ namespace konuralprocketGS
 
         }
 
-        private void parsedata(string data)
+        // Timer elapsed event handler
+        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Console.WriteLine($"recived data {data}");
-            richTextBox1.AppendText($"recived data {data}\n");
-            // Split the data using the ',' delimiter
-            string[] values = data.Split(',');
+            // Update labels with received data
+            UpdateLabels();
+        }
+
+        // Method to parse received data
+        private void ParseData(string data)
+        {
             try
             {
-                if (values != null && values.Length >= 3) // Check if the array is not null and has at least 6 elements
+                string[] values = data.Split(',');
+                if(values.Length <= 5)
                 {
-                    updategyro(values[0], values[1], values[2]);
-                    updatebmp(values[3], values[4]);
-                    // gps(values[6], values[7]);
-                }
+                    gyroX = values[0];
+                    gyroY = values[1];
+                    gyroZ = values[2];
+                    temperature = values[3];
+                    pressure = values[4];               
+                }          
             }
             catch (Exception)
             {
-                MessageBox.Show("there is a NULL or your incress your aray size");
-            }
-            
-        }
 
+                throw;
+            }
+           
+        }
         // gyro controll
-        private void updategyro(string X, string Y, string Z)
+        private void UpdateLabels()
         {
-            label45.Text = X;
-            label49.Text = Y;
-            label50.Text = Z;
-            //label44.Text = hiz;
+            // Update gyro labels
+            label45.Invoke((MethodInvoker)(() => label45.Text = gyroX));
+            label49.Invoke((MethodInvoker)(() => label49.Text = gyroY));
+            label50.Invoke((MethodInvoker)(() => label50.Text = gyroZ));
 
-            //label15.Text = X;
-            //label16.Text = Y;
-            //label17.Text = Z;
-
-
-            double.TryParse(X, out double a);
-            x = a;
-            double.TryParse(Y, out double b);
-            y = b;
-            double.TryParse(Z, out double c);
-            z = c;
-
-
-
-            // Trigger a repaint of the OpenGL control on a separate thread
-            glControl1.Invalidate();
-
-            //this code put X,Y,Z values in selicted parts of the datagridview
-            int rowIndex = dataGridView1.Rows.Add();
-            dataGridView1.Rows[rowIndex].Cells["Column18"].Value = X;
-            dataGridView1.Rows[rowIndex].Cells["Column19"].Value = Y;
-            dataGridView1.Rows[rowIndex].Cells["Column20"].Value = Z;
+            // Update temperature and pressure labels
+            label43.Invoke((MethodInvoker)(() => label43.Text = temperature));
+            label41.Invoke((MethodInvoker)(() => label41.Text = pressure));
         }
 
-        // tempreture and pressure controll
-        private void updatebmp(string tempreture, string pressure)
-        {
-            label43.Text = tempreture;
-            label41.Text = pressure;
-            //label47.Text = altitude;
-
-            glControl1.Invalidate();
-            int rowIndex = dataGridView1.Rows.Add();
-            dataGridView1.Rows[rowIndex].Cells["Column13"].Value = tempreture;
-            dataGridView1.Rows[rowIndex].Cells["Column6"].Value = pressure;
-            //dataGridView1.Rows[rowIndex].Cells["Column8"].Value = altitude;
-            //dataGridView1.Rows[rowIndex].Cells["Column10"].Value = altitude;
-
-        }
-
-        // gps controll
-        private void gps(string lat, string lng)
-        {
-            double lat1, lng1;
-
-            // Use double.TryParse to handle potential parsing errors
-            if (double.TryParse(lat, out lat1) && double.TryParse(lng, out lng1))
-            {
-                // Check if both latitude and longitude are not zero
-                if (lat1 != 0.0 || lng1 != 0.0)
-                {
-                    // txtlat.Text = lat1.ToString();
-                    //txtlong.Text = lng1.ToString();
-
-                    map.UpdateMapPosition(lat1, lng1);
-
-                    // gps controll 2 for the second map update it when its necessary
-                    label39.Text = lat1.ToString();
-                    label7.Text = lng1.ToString();
-
-                    map.UpdateMapPosition2(lat1, lng1);
-
-                    int rowIndex = dataGridView1.Rows.Add();
-                    dataGridView1.Rows[rowIndex].Cells["Column15"].Value = lat1;
-                    dataGridView1.Rows[rowIndex].Cells["Column16"].Value = lng1;
-                }
-            }
-        }
-
+        #endregion
         private void PopulateCOMPorts()
         {
             comboBox6.Items.Clear();
