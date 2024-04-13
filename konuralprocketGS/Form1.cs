@@ -335,7 +335,8 @@ namespace konuralprocketGS
                 });
             }
             else
-                throw new Exception("error port denied connection");
+                MessageBox.Show("error port denied connection");
+      
         }
         private void DisconnectSerialPort()
         {
@@ -433,6 +434,7 @@ namespace konuralprocketGS
                     temperature = values[3];
                     pressure = values[4];
                 }
+
             }
             catch (Exception)
             {
@@ -454,6 +456,30 @@ namespace konuralprocketGS
                 // Update temperature and pressure labels
                 label43.Invoke((MethodInvoker)(() => label43.Text = temperature));
                 label41.Invoke((MethodInvoker)(() => label41.Text = pressure));
+            }
+
+            if (serialPort.IsOpen)
+            {
+                double.TryParse(gyroX, out double a);
+                x = a;
+                double.TryParse(gyroY, out double b);
+                y = b;
+                double.TryParse(gyroZ, out double c);
+                z = c;
+
+                // Trigger a repaint of the OpenGL control on a separate thread
+                glControl1.Invalidate();
+                if (this.InvokeRequired)
+                {
+                    this.Invoke((MethodInvoker)(() =>
+                    {
+                        //this code put X,Y,Z values in selicted parts of the datagridview
+                        int rowIndex = dataGridView1.Rows.Add();
+                        dataGridView1.Rows[rowIndex].Cells["Column18"].Value = gyroX;
+                        dataGridView1.Rows[rowIndex].Cells["Column19"].Value = gyroY;
+                        dataGridView1.Rows[rowIndex].Cells["Column20"].Value = gyroZ;
+                    }));
+                }
             }
         }
 
