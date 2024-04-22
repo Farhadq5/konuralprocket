@@ -61,7 +61,7 @@ namespace konuralprocketGS
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-          
+
             PopulateCOMPorts();
             PopulateBaudRates();
         }
@@ -336,7 +336,7 @@ namespace konuralprocketGS
             }
             else
                 MessageBox.Show("error port denied connection");
-      
+
         }
         private void DisconnectSerialPort()
         {
@@ -434,6 +434,8 @@ namespace konuralprocketGS
                     temperature = values[3];
                     pressure = values[4];
                 }
+                else
+                    MessageBox.Show("no data to parse");
 
             }
             catch (Exception)
@@ -446,42 +448,48 @@ namespace konuralprocketGS
 
         private void UpdateLabels()
         {
-            if (this.InvokeRequired)
+            if (!IsDisposed && this.InvokeRequired)
             {
-                // Update gyro labels
-                label45.Invoke((MethodInvoker)(() => label45.Text = gyroX));
-                label49.Invoke((MethodInvoker)(() => label49.Text = gyroY));
-                label50.Invoke((MethodInvoker)(() => label50.Text = gyroZ));
+                this.Invoke((MethodInvoker)(() =>
+                {
+                    // Update gyro labels
+                    label45.Text = gyroX;
+                    label49.Text = gyroY;
+                    label50.Text = gyroZ;
 
-                // Update temperature and pressure labels
-                label43.Invoke((MethodInvoker)(() => label43.Text = temperature));
-                label41.Invoke((MethodInvoker)(() => label41.Text = pressure));
+                    // Update temperature and pressure labels
+                    label43.Text = temperature;
+                    label41.Text = pressure;
+                }));
             }
 
             if (serialPort.IsOpen)
             {
-                double.TryParse(gyroX, out double a);
+                double.TryParse(gyroY, out double a);
                 x = a;
-                double.TryParse(gyroY, out double b);
+                double.TryParse(gyroX, out double b);
                 y = b;
                 double.TryParse(gyroZ, out double c);
                 z = c;
-
                 // Trigger a repaint of the OpenGL control on a separate thread
                 glControl1.Invalidate();
-                if (this.InvokeRequired)
+            }
+         
+            if (this.InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)(() =>
                 {
-                    this.Invoke((MethodInvoker)(() =>
-                    {
-                        //this code put X,Y,Z values in selicted parts of the datagridview
-                        int rowIndex = dataGridView1.Rows.Add();
-                        dataGridView1.Rows[rowIndex].Cells["Column18"].Value = gyroX;
-                        dataGridView1.Rows[rowIndex].Cells["Column19"].Value = gyroY;
-                        dataGridView1.Rows[rowIndex].Cells["Column20"].Value = gyroZ;
-                    }));
-                }
+                    //this code put X,Y,Z values in selicted parts of the datagridview
+                    int rowIndex = dataGridView1.Rows.Add();
+                    dataGridView1.Rows[rowIndex].Cells["Column18"].Value = gyroX;
+                    dataGridView1.Rows[rowIndex].Cells["Column19"].Value = gyroY;
+                    dataGridView1.Rows[rowIndex].Cells["Column20"].Value = gyroZ;
+                }));
+
             }
         }
+
+
 
         #endregion
 
