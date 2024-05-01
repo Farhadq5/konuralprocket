@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace konuralprocketGS
 {
@@ -23,6 +24,8 @@ namespace konuralprocketGS
         private GyroGL_Class gyroGL;
 
         private mapcontrol map;
+
+        private int datacount = 0;
 
 
         // veriables here to get value from gyro and oomfactor for glcontrol and marker for map
@@ -57,7 +60,6 @@ namespace konuralprocketGS
             //this code gets the value from label the speed and altitude and sends it to class
             gyroGL.altitude = label47.Text;
             gyroGL.speed = label44.Text;
-
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -82,6 +84,7 @@ namespace konuralprocketGS
                 }
             }
         }
+
 
         #region rocket serialport
 
@@ -265,19 +268,6 @@ namespace konuralprocketGS
         #endregion
 
         #region new implementation
-        private void InitializeSerialPort()
-        {
-            serialPort = new SerialPort();
-            serialPort.DataReceived += SerialPort_DataReceived;
-
-            // Configure and start the timer
-            System.Timers.Timer timer = new System.Timers.Timer();
-            timer.Interval = 150; // Set the interval to 150 milliseconds
-            timer.Elapsed += Timer_Elapsed;
-            timer.Start();
-
-        }
-
 
         private Thread connectionThread;
         //serialport connect and disconnect button
@@ -352,12 +342,18 @@ namespace konuralprocketGS
             }
         }
 
-        // Define variables to store received data
-        private string gyroX = 0.ToString();
-        private string gyroY = 0.ToString();
-        private string gyroZ = 0.ToString();
-        private string temperature = 0.ToString();
-        private string pressure = 0.ToString();
+        private void InitializeSerialPort()
+        {
+            serialPort = new SerialPort();
+            serialPort.DataReceived += SerialPort_DataReceived;
+
+            // Configure and start the timer
+            System.Timers.Timer timer = new System.Timers.Timer();
+            timer.Interval = 200; // Set the interval to 150 milliseconds
+            timer.Elapsed += Timer_Elapsed;
+            timer.Start();
+
+        }
 
         private async void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
@@ -375,33 +371,45 @@ namespace konuralprocketGS
 
         private async Task<string> ReadLineAsync(Stream stream)
         {
-            byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
+            const int bufferSize = 1024;
+            byte[] buffer = new byte[bufferSize];
             StringBuilder line = new StringBuilder();
-
+            string incompleteLine = string.Empty;
 
             try
             {
                 while (true)
                 {
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
 
                     if (bytesRead == 0)
                     {
                         // Disconnection detected
                         return null; // Or throw an exception if disconnection should be treated as an error
-
                     }
 
+                    // Decode the bytes received into a string
                     string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                    line.Append(data);
 
-                    int newlineIndex;
-                    while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
+                    // Combine incomplete data from previous reads with the new data
+                    string combinedData = incompleteLine + data;
+
+                    // Split the combined data into lines
+                    string[] lines = combinedData.Split(new char[] { '\n' }, StringSplitOptions.None);
+
+                    // Process all complete lines (except the last one, which might be incomplete)
+                    for (int i = 0; i < lines.Length - 1; i++)
                     {
-                        string lineStr = line.ToString(0, newlineIndex);
-                        line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
-                        return lineStr;
+                        string lineStr = lines[i].Trim(); // Trim any leading or trailing whitespace
+                        if (!string.IsNullOrEmpty(lineStr))
+                        {
+                            // Return the complete line
+                            return lineStr;
+                        }
                     }
+
+                    // Store the last line as incomplete for the next iteration
+                    incompleteLine = lines[lines.Length - 1];
                 }
             }
             catch (Exception ex)
@@ -410,8 +418,20 @@ namespace konuralprocketGS
                 Console.WriteLine($"Error in ReadLineAsync: {ex.Message}");
                 return null;
             }
-
         }
+
+
+        // Define variables to store received data
+        private string gyroX = 0.ToString();
+        private string gyroY = 0.ToString();
+        private string gyroZ = 0.ToString();
+        private string temperature = 0.ToString();
+        private string pressure = 0.ToString();
+        private string Maplang = 0.ToString();
+        private string Maplat = 0.ToString();
+
+
+
 
         // Timer elapsed event handler
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -420,32 +440,34 @@ namespace konuralprocketGS
             UpdateLabels();
         }
 
+
         // Method to parse received data
         private void ParseData(string data)
         {
             try
             {
-                string[] values = data.Split(',');
-                if (values.Length <= 5)
+                if (data != null)
                 {
-                    gyroX = values[0];
-                    gyroY = values[1];
-                    gyroZ = values[2];
-                    temperature = values[3];
-                    pressure = values[4];
-                }
-                else
-                    MessageBox.Show("no data to parse");
+                    string[] values = data.Split(',');
+                    if (values.Length >= 7)
+                    {
+                        gyroX = values[0];
+                        gyroY = values[1];
+                        gyroZ = values[2];
+                        temperature = values[3];
+                        pressure = values[4];
+                        Maplang = values[5];
+                        Maplat = values[6];
+                    }
 
+                }
             }
             catch (Exception)
             {
-
+                // Log or handle the exception appropriately
                 throw;
             }
-
         }
-
         private void UpdateLabels()
         {
             if (!IsDisposed && this.InvokeRequired)
@@ -460,6 +482,10 @@ namespace konuralprocketGS
                     // Update temperature and pressure labels
                     label43.Text = temperature;
                     label41.Text = pressure;
+
+                    label7.Text = Maplang;
+                    label39.Text = Maplat;
+
                 }));
             }
 
@@ -474,7 +500,7 @@ namespace konuralprocketGS
                 // Trigger a repaint of the OpenGL control on a separate thread
                 glControl1.Invalidate();
             }
-         
+
             if (this.InvokeRequired)
             {
                 this.Invoke((MethodInvoker)(() =>
@@ -488,8 +514,6 @@ namespace konuralprocketGS
 
             }
         }
-
-
 
         #endregion
 
@@ -614,7 +638,7 @@ namespace konuralprocketGS
                 {
                     label19.Invoke((MethodInvoker)(() => label19.Font = new Font(label19.Font.FontFamily, 10)));
                     label19.Invoke((MethodInvoker)(() => label19.ForeColor = Color.Green));
-                    label19.Invoke((MethodInvoker)(() => label19.Text = " Uydu Connect"));  
+                    label19.Invoke((MethodInvoker)(() => label19.Text = " Uydu Connect"));
                 }
             }
             else
@@ -624,7 +648,7 @@ namespace konuralprocketGS
                 {
                     label19.Invoke((MethodInvoker)(() => label19.Font = new Font(label19.Font.FontFamily, 10)));
                     label19.Invoke((MethodInvoker)(() => label19.ForeColor = Color.Red));
-                    label19.Invoke((MethodInvoker)(() => label19.Text = " Uydu Disconnect"));  
+                    label19.Invoke((MethodInvoker)(() => label19.Text = " Uydu Disconnect"));
                 }
             }
         }
@@ -687,33 +711,45 @@ namespace konuralprocketGS
 
         private async Task<string> sat_ReadLineAsync(Stream stream)
         {
-            byte[] buffer = new byte[1024]; // Adjust the buffer size as needed
+            const int bufferSize = 1024;
+            byte[] buffer = new byte[bufferSize];
             StringBuilder line = new StringBuilder();
-
+            string incompleteLine = string.Empty;
 
             try
             {
                 while (true)
                 {
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    int bytesRead = stream.Read(buffer, 0, buffer.Length);
 
                     if (bytesRead == 0)
                     {
                         // Disconnection detected
                         return null; // Or throw an exception if disconnection should be treated as an error
-
                     }
 
+                    // Decode the bytes received into a string
                     string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                    line.Append(data);
 
-                    int newlineIndex;
-                    while ((newlineIndex = line.ToString().IndexOf('\n')) >= 0)
+                    // Combine incomplete data from previous reads with the new data
+                    string combinedData = incompleteLine + data;
+
+                    // Split the combined data into lines
+                    string[] lines = combinedData.Split(new char[] { '\n' }, StringSplitOptions.None);
+
+                    // Process all complete lines (except the last one, which might be incomplete)
+                    for (int i = 0; i < lines.Length - 1; i++)
                     {
-                        string lineStr = line.ToString(0, newlineIndex);
-                        line.Remove(0, newlineIndex + 1); // Remove the processed line including the newline character
-                        return lineStr;
+                        string lineStr = lines[i].Trim(); // Trim any leading or trailing whitespace
+                        if (!string.IsNullOrEmpty(lineStr))
+                        {
+                            // Return the complete line
+                            return lineStr;
+                        }
                     }
+
+                    // Store the last line as incomplete for the next iteration
+                    incompleteLine = lines[lines.Length - 1];
                 }
             }
             catch (Exception ex)
@@ -722,7 +758,6 @@ namespace konuralprocketGS
                 Console.WriteLine($"Error in ReadLineAsync: {ex.Message}");
                 return null;
             }
-
         }
 
         // Define variables to store received satalite data
@@ -814,21 +849,6 @@ namespace konuralprocketGS
             // Select the first baud rate by default
             comboBox7.SelectedIndex = 0;
         }
-
-        //private void sendCommand(char command)
-        //{
-        //    try
-        //    {
-
-        //        serialPort.Write($"{command}");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Error sending command to Arduino: {ex.Message}");
-        //    }
-        //}
-
-        //this button closes the serialport
         private void mapcontrol_Load(object sender, EventArgs e)
         {
 
@@ -848,7 +868,7 @@ namespace konuralprocketGS
         private void button13_Click(object sender, EventArgs e)
         {
             temizle1();
-           
+
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -973,23 +993,8 @@ namespace konuralprocketGS
             gyroZ = 0.ToString();
             temperature = 0.ToString();
             pressure = 0.ToString();
+            Maplang=0.ToString();
+            Maplat=0.ToString();
         }
-
-        private void show_portaktivity()
-        {
-            //if (!satserialport.IsOpen)
-            //{
-              
-            //    label12.ForeColor = Color.Red;
-            //    label12.Text = "Disconnected";
-            //}
-            //else if(satserialport.IsOpen)
-            //{
-            //    label12.ForeColor = Color.Green;
-            //    label12.Text = "Connected";
-            //}
-        }
-
-
     }
 }
