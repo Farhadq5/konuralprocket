@@ -19,17 +19,18 @@ namespace konuralprocketGS
         }
 
         private readonly GMapOverlay markerOverlay = new GMapOverlay("marker");
-        private readonly GMarkerGoogle currentPosationMarker = new GMarkerGoogle(new PointLatLng(40.839989, 31.155060), GMarkerGoogleType.blue_dot);
+        private readonly GMarkerGoogle currentPosationMarker = new GMarkerGoogle(new PointLatLng(40.839989, 31.155060), Properties.Resources.rocket_icon); // Assuming you have a rocket icon as a resource
 
         public void ShowCurrantPosation(double lat, double lng)
         {
-            // well set currant positions
-            currentPosationMarker.Position = new PointLatLng(lat, lng);
+            // Create a new marker with a custom icon
+            GMarkerGoogle currentPosationMarker = new GMarkerGoogle(new PointLatLng(lat, lng), Properties.Resources.rocket_icon);
 
+            // Add the marker to the marker overlay
             markerOverlay.Markers.Clear();
             markerOverlay.Markers.Add(currentPosationMarker);
 
-
+            // Set the map's position
             mapControl1.Position = new PointLatLng(lat, lng);
             mapControl1.DragButton = MouseButtons.Right;
         }

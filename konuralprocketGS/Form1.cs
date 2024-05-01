@@ -500,6 +500,16 @@ namespace konuralprocketGS
                 // Trigger a repaint of the OpenGL control on a separate thread
                 glControl1.Invalidate();
             }
+            if (serialPort.IsOpen)
+            {
+                this.Invoke((MethodInvoker)(() =>
+                {
+                    map.ShowCurrantPosation(double.Parse(Maplat), double.Parse(Maplang));
+                    map.UpdateMapPosition(double.Parse(Maplat), double.Parse(Maplang));
+
+
+                }));
+            }
 
             if (this.InvokeRequired)
             {
